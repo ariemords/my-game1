@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Platformer Ultimate - BULLETPROOF EDITION</title>
+    <title>Platformer Ultimate - 10 NEW SURPRISES</title>
     <link rel="shortcut icon" href="data:image/x-icon;," type="image/x-icon">
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
     <style>
         body { margin: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; color: white; font-family: Arial, sans-serif; }
         #game-container { box-shadow: 0 0 30px rgba(0,0,0,0.8); border-radius: 10px; overflow: hidden; position: relative; }
-        /* תיבת השגיאות החדשה שלנו במקום מסך שחור! */
         #error-msg { display: none; color: red; font-size: 20px; direction: ltr; position: absolute; top: 20px; left: 20px; background: black; padding: 20px; border: 2px solid red; z-index: 1000; }
     </style>
 </head>
@@ -18,17 +17,11 @@
     <div id="game-container"></div>
     
     <script>
-        // אם משהו קורס, זה יציג לנו את השגיאה על המסך ולא יהיה יותר מסך שחור!
         window.onerror = function(msg, url, line) {
             let errDiv = document.getElementById('error-msg');
-            errDiv.style.display = 'block';
-            errDiv.innerHTML = "שגיאה! צלם לי את המסך הזה:<br><br>" + msg + "<br>Line: " + line;
-            return false;
+            errDiv.style.display = 'block'; errDiv.innerHTML = "שגיאה! צלם לי את זה:<br><br>" + msg + "<br>Line: " + line; return false;
         };
-    </script>
 
-    <script>
-        // --- מערכת סאונד ---
         const SoundEngine = {
             ctx: null,
             init() { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); if (this.ctx.state === 'suspended') this.ctx.resume(); },
@@ -46,29 +39,19 @@
         const config = { type: Phaser.AUTO, width: 800, height: 600, parent: 'game-container', physics: { default: 'arcade', arcade: { gravity: { y: 1000 }, debug: false } }, scene: { create: create, update: update } };
         const game = new Phaser.Game(config);
         
-        // כל המשתנים מוגדרים בצורה מסודרת
+        // כל המשתנים
         let player, ground, platforms, iceGround, mysteryBlocks, powerUps;
         let enemies, boss, fireballs, springs, healSprings, iceballs;
-        let coinsGroup, goals, lasers, lava, gravityBubbles, bubbleShield;
-        let cursors, keys, scoreText, healthText, bossHealthText;
-        let centerText, levelText;
+        let coinsGroup, goals, lasers, lava, gravityBubbles, bubbleShield, fakeGoal;
+        let cursors, keys, scoreText, healthText, bossHealthText, centerText, levelText, bossTalk;
         
-        let score = 0;
-        let health = 3;
-        let bossHealth = 10;
-        let currentLevel = 1;
-        let gameActive = false;
-        let isInvincible = false;
-        let currentSpeed = 250;
-        let hasIcePower = true; // הקרח פעיל מההתחלה לפי בקשתך!
-        let lastShotTime = 0;
-        let canDoubleJump = false;
-        let canDash = true;
-        let usedCoinRain = false;
-        let isSlowMo = false;
-        let reverseControls = false;
-        let gravityFlipped = false;
-        let trollEventsStarted = false;
+        // המקשים המיוחדים שהיו חסרים
+        let restartKey, shootKey, dashKey, coinRainKey, slowMoKey, shrinkKey, jetpackKey, blackHoleKey, meteorKey;
+        
+        let score = 0, health = 3, bossHealth = 10, currentLevel = 1, gameActive = false, isInvincible = false, currentSpeed = 250, hasIcePower = true;
+        let lastShotTime = 0, canDoubleJump = false, canDash = true, usedCoinRain = false, isSlowMo = false, reverseControls = false, gravityFlipped = false;
+        let trollEventsStarted = false, blackHoleUsed = false, isTiny = false;
+        let pet; // חיית המחמד!
 
         function createTextures(scene) {
             let g = scene.make.graphics({ x: 0, y: 0, add: false });
@@ -78,7 +61,6 @@
             g.fillStyle(0x8B4513); g.fillRect(0, 0, 400, 40); g.generateTexture('groundTex', 400, 40); g.clear();
             g.fillStyle(0x00FFFF); g.fillRect(0, 0, 400, 40); g.generateTexture('iceGroundTex', 400, 40); g.clear();
             g.fillStyle(0xDEB887); g.fillRect(0, 0, 150, 20); g.generateTexture('platTex', 150, 20); g.clear();
-            // דגל סיום השלב (זהב)
             g.fillStyle(0xFFD700); g.fillRect(0, 0, 32, 64); g.generateTexture('goalTex', 32, 64); g.clear();
             g.fillStyle(0xFFFF00); g.fillCircle(8, 8, 8); g.generateTexture('coinTex', 16, 16); g.clear();
             g.fillStyle(0x00FFFF); g.fillCircle(8, 8, 8); g.generateTexture('iceTex', 16, 16); g.clear();
@@ -90,6 +72,8 @@
             g.fillStyle(0xFF8C00); g.fillRect(0, 0, 40, 40); g.generateTexture('blockTex', 40, 40); g.clear();
             g.fillStyle(0xFFFFFF); g.fillRect(0, 0, 20, 20); g.generateTexture('powerTex', 20, 20); g.clear();
             g.fillStyle(0xFFFFFF); g.fillCircle(4, 4, 4); g.generateTexture('particleTex', 8, 8); g.clear();
+            g.fillStyle(0xFFFF00); g.fillCircle(6, 6, 6); g.generateTexture('petTex', 12, 12); g.clear(); // חיית המחמד
+            g.fillStyle(0x00FFFF); g.moveTo(8,0); g.lineTo(16,8); g.lineTo(8,16); g.lineTo(0,8); g.fill(); g.generateTexture('diamondTex', 16, 16); g.clear(); // יהלום 100 נק'
         }
 
         function explodeParticles(scene, x, y, color, qty = 15) {
@@ -104,113 +88,70 @@
             healthText = this.add.text(16, 50, 'חיים: 3', { fontSize: '24px', fill: '#FFF', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setScrollFactor(0).setDepth(20);
             levelText = this.add.text(400, 16, 'שלב: 1', { fontSize: '24px', fill: '#FFF', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(20);
             bossHealthText = this.add.text(600, 16, '', { fontSize: '24px', fill: '#FF0000', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setScrollFactor(0).setDepth(20);
-            centerText = this.add.text(400, 300, 'רווח להתחלה | R לאיפוס\nהקרח שלך פעיל (X)! גע בדגל כדי לעבור שלב.', { fontSize: '30px', fill: '#FFF', fontStyle: 'bold', align:'center', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5).setScrollFactor(0).setDepth(20);
-            
+            centerText = this.add.text(400, 300, 'רווח להתחלה! כל המקשים עובדים (X, Z, S, J, B, M, T, C)', { fontSize: '24px', fill: '#FFF', fontStyle: 'bold', align:'center', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5).setScrollFactor(0).setDepth(20);
+            bossTalk = this.add.text(0, 0, '', { fontSize: '18px', fill: '#000', backgroundColor: '#FFF', padding: 5 }).setOrigin(0.5).setVisible(false).setDepth(25);
+
+            // הפעם: מגדיר את כל המקשים בצורה תקינה כדי למנוע את השגיאה לחלוטין!
             cursors = this.input.keyboard.createCursorKeys(); 
-            keys = this.input.keyboard.addKeys('W,A,D,SPACE,X,Z,C,T,R');
+            keys = this.input.keyboard.addKeys('W,A,D,SPACE');
+            restartKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R);
+            shootKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.X);
+            dashKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Z);
+            coinRainKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.C);
+            slowMoKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.T);
+            shrinkKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
+            jetpackKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.J);
+            blackHoleKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.B);
+            meteorKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.M);
 
             this.input.keyboard.on('keydown-SPACE', () => { 
-                if (!gameActive && centerText.visible) { 
-                    gameActive = true; 
-                    centerText.setVisible(false); 
-                    SoundEngine.init(); 
-                    if(currentLevel === 3) startBossAI(this); 
-                } 
+                if (!gameActive && centerText.visible) { gameActive = true; centerText.setVisible(false); SoundEngine.init(); if(currentLevel === 3) startBossAI(this); } 
             });
-
-            // ריסט מושלם בלחיצה על R
             this.input.keyboard.on('keydown-R', () => { window.location.reload(); });
 
             setupLevel(this, 1);
         }
 
         function setupLevel(scene, level) {
-            currentLevel = level;
-            scene.physics.world.timeScale = 1;
-            reverseControls = false;
-            gravityFlipped = false;
-            
+            currentLevel = level; scene.physics.world.timeScale = 1; reverseControls = false; gravityFlipped = false; isTiny = false; blackHoleUsed = false;
             if(levelText) levelText.setText('שלב: ' + level);
 
-            // מחיקה בטוחה של השלב הקודם (כדי שלא יקרוס)
             let groups = [ground, platforms, iceGround, mysteryBlocks, enemies, goals, springs, healSprings, lasers, lava, fireballs, iceballs, coinsGroup, powerUps, gravityBubbles];
             groups.forEach(g => { if(g) g.clear(true, true); });
 
-            // יצירה מחדש של כל הקבוצות - הבאג תוקן כאן!
-            ground = scene.physics.add.staticGroup();
-            platforms = scene.physics.add.staticGroup();
-            iceGround = scene.physics.add.staticGroup();
-            mysteryBlocks = scene.physics.add.staticGroup();
-            goals = scene.physics.add.staticGroup();
-            springs = scene.physics.add.staticGroup();
-            healSprings = scene.physics.add.staticGroup();
-            lasers = scene.physics.add.staticGroup();
-            lava = scene.physics.add.staticGroup();
-            
-            enemies = scene.physics.add.group();
-            fireballs = scene.physics.add.group({allowGravity: false});
-            iceballs = scene.physics.add.group({allowGravity: false});
-            coinsGroup = scene.physics.add.group();
-            powerUps = scene.physics.add.group(); // השורה החסרה שגרמה לקריסה בקובייה חזרה!
-            gravityBubbles = scene.physics.add.group({allowGravity: false});
+            ground = scene.physics.add.staticGroup(); platforms = scene.physics.add.staticGroup(); iceGround = scene.physics.add.staticGroup(); mysteryBlocks = scene.physics.add.staticGroup();
+            goals = scene.physics.add.staticGroup(); springs = scene.physics.add.staticGroup(); healSprings = scene.physics.add.staticGroup(); lasers = scene.physics.add.staticGroup(); lava = scene.physics.add.staticGroup();
+            enemies = scene.physics.add.group(); fireballs = scene.physics.add.group({allowGravity: false}); iceballs = scene.physics.add.group({allowGravity: false}); coinsGroup = scene.physics.add.group();
+            powerUps = scene.physics.add.group(); gravityBubbles = scene.physics.add.group({allowGravity: false});
 
-            scene.physics.world.setBounds(0, 0, 3200, 600);
-            scene.cameras.main.setBounds(0, 0, 3200, 600);
+            scene.physics.world.setBounds(0, 0, 3200, 600); scene.cameras.main.setBounds(0, 0, 3200, 600);
 
-            // סביבת שלב
-            if (level === 1) {
-                scene.cameras.main.setBackgroundColor('#4CA1AF');
-                for (let x = 0; x < 3200; x += 400) ground.create(x + 200, 580, 'groundTex');
-            } else if (level === 2) {
-                scene.cameras.main.setBackgroundColor('#483D8B');
-                for (let x = 0; x < 3200; x += 400) {
-                    if(x === 1200 || x === 2000) iceGround.create(x + 200, 580, 'iceGroundTex');
-                    else ground.create(x + 200, 580, 'groundTex');
-                }
-            } else if (level === 3) {
-                scene.cameras.main.setBackgroundColor('#8B0000');
-                for (let x = 0; x < 800; x += 400) ground.create(x + 200, 580, 'groundTex');
-                for (let x = 800; x < 3200; x += 800) lava.create(x, 590, 'lavaTex');
-            }
+            if (level === 1) { scene.cameras.main.setBackgroundColor('#4CA1AF'); for (let x = 0; x < 3200; x += 400) ground.create(x + 200, 580, 'groundTex'); } 
+            else if (level === 2) { scene.cameras.main.setBackgroundColor('#483D8B'); for (let x = 0; x < 3200; x += 400) { if(x === 1200 || x === 2000) iceGround.create(x + 200, 580, 'iceGroundTex'); else ground.create(x + 200, 580, 'groundTex'); } } 
+            else if (level === 3) { scene.cameras.main.setBackgroundColor('#8B0000'); for (let x = 0; x < 800; x += 400) ground.create(x + 200, 580, 'groundTex'); for (let x = 800; x < 3200; x += 800) lava.create(x, 590, 'lavaTex'); }
 
-            // דגל סיום לשלבים 1 ו-2
-            if (level < 3) {
-                goals.create(3100, 520, 'goalTex');
-            }
+            if (level < 3) goals.create(3100, 520, 'goalTex');
+            // דגל מזויף בשלב 2! (הפתעה 6)
+            if (level === 2) { fakeGoal = scene.physics.add.staticSprite(1600, 520, 'goalTex'); fakeGoal.setTint(0xFFDDDD); }
 
-            // יצירת או איפוס שחקן
             if (!player) {
                 player = scene.physics.add.sprite(100, 450, 'playerTex').setBounce(0.1).setCollideWorldBounds(true);
                 scene.cameras.main.startFollow(player, true, 0.05, 0.05);
                 bubbleShield = scene.add.image(0, 0, 'bubbleTex').setAlpha(0).setDepth(21);
-            } else {
-                player.x = 100;
-                player.y = 450;
-                player.setVelocity(0);
-                player.clearTint();
-            }
+                pet = scene.add.image(100, 400, 'petTex').setDepth(22); // חיית מחמד! (הפתעה 1)
+            } else { player.x = 100; player.y = 450; player.setVelocity(0); player.clearTint(); player.setScale(1); }
 
-            // עיצוב אובייקטים לפי שלב
             if (level === 1) {
-                [500, 900, 1400, 2000].forEach((x, i) => {
-                    let plat = platforms.create(x, 450 - (i*20), 'platTex');
-                    plat.body.checkCollision.down = false; plat.body.checkCollision.left = false; plat.body.checkCollision.right = false;
-                });
+                [500, 900, 1400, 2000].forEach((x, i) => { let plat = platforms.create(x, 450 - (i*20), 'platTex'); plat.body.checkCollision.down = false; });
                 [700, 1200, 1800, 2400].forEach(x => enemies.create(x, 500, 'enemyTex').setVelocityX(100).setBounceX(1).setCollideWorldBounds(true));
-                mysteryBlocks.create(400, 250, 'blockTex').setData('used', false);
-                springs.create(1600, 550, 'springTex');
+                mysteryBlocks.create(400, 250, 'blockTex').setData('used', false); springs.create(1600, 550, 'springTex');
             } else if (level === 2) {
-                [600, 1100, 1600, 2200].forEach((x, i) => {
-                    let plat = platforms.create(x, 450 - (i*20), 'platTex');
-                    plat.body.checkCollision.down = false; plat.body.checkCollision.left = false; plat.body.checkCollision.right = false;
-                });
+                [600, 1100, 1600, 2200].forEach((x, i) => { let plat = platforms.create(x, 450 - (i*20), 'platTex'); plat.body.checkCollision.down = false; });
                 [800, 1400, 1900, 2500].forEach(x => enemies.create(x, 500, 'enemyTex').setVelocityX(120).setBounceX(1).setCollideWorldBounds(true));
-                mysteryBlocks.create(1000, 250, 'blockTex').setData('used', false);
-                healSprings.create(2500, 550, 'healSpringTex');
+                mysteryBlocks.create(1000, 250, 'blockTex').setData('used', false); healSprings.create(2500, 550, 'healSpringTex');
             } else if (level === 3) {
                 boss = scene.physics.add.sprite(2900, 400, 'bossTex').setBounce(0.2).setCollideWorldBounds(true).setData('isAlive', true).setData('hp', 10);
-                scene.physics.add.collider(boss, ground);
-                if(gameActive) startBossAI(scene);
+                scene.physics.add.collider(boss, ground); if(gameActive) startBossAI(scene);
             }
 
             setupCollisions(scene);
@@ -218,45 +159,40 @@
         }
 
         function setupCollisions(scene) {
-            scene.physics.add.collider(player, ground);
-            scene.physics.add.collider(player, platforms);
-            scene.physics.add.collider(player, iceGround);
-            scene.physics.add.collider(enemies, ground);
-            scene.physics.add.collider(enemies, platforms);
-            scene.physics.add.collider(enemies, iceGround);
-            scene.physics.add.collider(powerUps, ground);
-            scene.physics.add.collider(powerUps, platforms);
-            scene.physics.add.collider(coinsGroup, ground);
+            scene.physics.add.collider(player, [ground, platforms, iceGround]); scene.physics.add.collider(enemies, [ground, platforms, iceGround]);
+            scene.physics.add.collider(powerUps, [ground, platforms, iceGround]); scene.physics.add.collider(coinsGroup, [ground, platforms, iceGround]);
 
-            // מעבר שלב בדגל!
-            scene.physics.add.overlap(player, goals, () => {
-                if (currentLevel < 3) setupLevel(scene, currentLevel + 1);
-            });
+            scene.physics.add.collider(player, iceGround, () => { if (Math.abs(player.body.velocity.x) > 10) player.setAccelerationX(player.body.velocity.x * 2); else player.setAccelerationX(0); });
+            scene.physics.add.overlap(player, goals, () => { if (currentLevel < 3) setupLevel(scene, currentLevel + 1); });
+            
+            // מלכודת דגל מזויף!
+            if(currentLevel === 2) {
+                scene.physics.add.overlap(player, fakeGoal, (p, f) => {
+                    explodeParticles(scene, f.x, f.y, 0xFF0000, 30); f.destroy(); SoundEngine.play('hit');
+                    for(let i=0; i<3; i++) enemies.create(f.x + (i*30 - 30), f.y - 50, 'enemyTex').setVelocityX(150).setBounceX(1).setCollideWorldBounds(true);
+                });
+            }
 
-            // קוביות כוח - עובדות חלק עכשיו!
             scene.physics.add.collider(player, mysteryBlocks, (p, b) => {
                 if (p.body.touching.up && b.body.touching.down && !b.getData('used')) {
-                    b.setData('used', true); b.setTint(0x555555); SoundEngine.play('coin');
-                    scene.tweens.add({ targets: b, y: b.y - 10, duration: 50, yoyo: true });
+                    b.setData('used', true); b.setTint(0x555555); SoundEngine.play('coin'); scene.tweens.add({ targets: b, y: b.y - 10, duration: 50, yoyo: true });
                     
-                    let pwrTypes = [{t:'health', c:0xFF0000}, {t:'star', c:0xFFFF00}, {t:'speed', c:0x00FFFF}, {t:'poison', c:0x800080}];
-                    let chosen = pwrTypes[Phaser.Math.Between(0, 3)];
-                    let pwr = powerUps.create(b.x, b.y - 30, 'powerTex').setTint(chosen.c).setVelocityY(-200);
-                    pwr.setData('type', chosen.t);
+                    // הפתעה 7: סיכוי ליהלום 100 נקודות
+                    if(Math.random() < 0.2) {
+                        let d = coinsGroup.create(b.x, b.y - 30, 'diamondTex').setVelocityY(-300); d.setData('diamond', true);
+                    } else {
+                        let pwrTypes = [{t:'health', c:0xFF0000}, {t:'star', c:0xFFFF00}, {t:'speed', c:0x00FFFF}, {t:'poison', c:0x800080}];
+                        let chosen = pwrTypes[Phaser.Math.Between(0, 3)];
+                        let pwr = powerUps.create(b.x, b.y - 30, 'powerTex').setTint(chosen.c).setVelocityY(-200); pwr.setData('type', chosen.t);
+                    }
                 }
             });
 
-            // איסוף כוחות
             scene.physics.add.overlap(player, powerUps, (p, pw) => {
-                let type = pw.getData('type');
-                explodeParticles(scene, pw.x, pw.y, pw.tintTopLeft); 
-                pw.destroy(); SoundEngine.play('coin');
-                
+                let type = pw.getData('type'); explodeParticles(scene, pw.x, pw.y, pw.tintTopLeft); pw.destroy(); SoundEngine.play('coin');
                 if(type === 'poison') {
-                    score = Math.max(0, score - 50); scoreText.setText('ניקוד: ' + score); 
-                    reverseControls = true; player.setTint(0x800080);
-                    centerText.setText('שליטה הפוכה!').setVisible(true).setFill('#800080');
-                    scene.time.delayedCall(5000, () => { reverseControls = false; player.clearTint(); if(gameActive) centerText.setVisible(false); });
+                    score = Math.max(0, score - 50); scoreText.setText('ניקוד: ' + score); reverseControls = true; player.setTint(0x800080);
+                    centerText.setText('שליטה הפוכה!').setVisible(true).setFill('#800080'); scene.time.delayedCall(5000, () => { reverseControls = false; player.clearTint(); if(gameActive) centerText.setVisible(false); });
                 } else {
                     score += 50; scoreText.setText('ניקוד: ' + score);
                     if(type === 'health') { if(health < 5) health++; healthText.setText('חיים: ' + health); }
@@ -265,87 +201,81 @@
                 }
             });
 
-            // קרח פוגע באויבים
-            scene.physics.add.collider(iceballs, ground, (i) => i.destroy());
-            scene.physics.add.collider(iceballs, platforms, (i) => i.destroy());
-            scene.physics.add.collider(iceballs, enemies, (i, e) => { 
-                e.destroy(); i.destroy(); score+=30; scoreText.setText('ניקוד: ' + score);
-                SoundEngine.play('hit'); explodeParticles(scene, e.x, e.y, 0x00FFFF, 10); 
-            });
+            scene.physics.add.collider(iceballs, [ground, platforms], (i) => i.destroy());
+            scene.physics.add.collider(iceballs, enemies, (i, e) => { e.destroy(); i.destroy(); score+=30; scoreText.setText('ניקוד: ' + score); SoundEngine.play('hit'); explodeParticles(scene, e.x, e.y, 0x00FFFF, 10); });
+            scene.physics.add.collider(player, enemies, (p, e) => { if (p.body.touching.down && e.body.touching.up && p.body.velocity.y > 0) { e.destroy(); p.setVelocityY(isTiny ? -250 : -350); score+=20; scoreText.setText('ניקוד: ' + score); SoundEngine.play('jump'); } else { takeDamage(scene); } });
 
-            // פגיעה באויב
-            scene.physics.add.collider(player, enemies, (p, e) => {
-                if (p.body.touching.down && e.body.touching.up && p.body.velocity.y > 0) {
-                    e.destroy(); p.setVelocityY(-350); score+=20; scoreText.setText('ניקוד: ' + score); SoundEngine.play('jump');
-                } else { takeDamage(scene); }
-            });
-
-            // בוס
             if(currentLevel === 3) {
                 scene.physics.add.overlap(player, lava, () => { health = 0; takeDamage(scene); });
                 scene.physics.add.overlap(player, fireballs, (p, f) => { f.destroy(); takeDamage(scene); });
                 scene.physics.add.collider(iceballs, boss, (i, b) => { i.destroy(); hitBoss(scene, 1); });
-                scene.physics.add.collider(player, boss, (p, b) => {
-                    if (p.body.touching.down && b.body.touching.up && p.body.velocity.y > 0) { p.setVelocityY(-400); hitBoss(scene, 4); } 
-                    else { takeDamage(scene); }
-                });
+                scene.physics.add.collider(player, boss, (p, b) => { if (p.body.touching.down && b.body.touching.up && p.body.velocity.y > 0) { p.setVelocityY(-400); hitBoss(scene, 4); } else { takeDamage(scene); } });
             }
 
             scene.physics.add.collider(player, springs, (p, s) => { p.setVelocityY(-1100); SoundEngine.play('coin'); });
             scene.physics.add.collider(player, healSprings, (p, s) => { p.setVelocityY(-900); if(health < 5) health++; healthText.setText('חיים: ' + health); SoundEngine.play('coin'); });
-            scene.physics.add.overlap(player, coinsGroup, (p, c) => { c.destroy(); score += 10; scoreText.setText('ניקוד: ' + score); SoundEngine.play('coin'); });
+            scene.physics.add.overlap(player, coinsGroup, (p, c) => { let val = c.getData('diamond') ? 100 : 10; c.destroy(); score += val; scoreText.setText('ניקוד: ' + score); SoundEngine.play('coin'); });
         }
 
         function update(time) {
             if (!gameActive) return;
 
+            // עדכון חיית מחמד
+            if(pet) { pet.x += (player.x - 30 - pet.x) * 0.05; pet.y += (player.y - 30 - pet.y) * 0.05; }
+
+            // הפתעה 8: סופת רוחות בשלב 2!
+            if(currentLevel === 2) { player.body.velocity.x -= 2; }
+
             let v = currentSpeed;
             if (reverseControls) {
-                if(cursors.left.isDown || keys.A.isDown) { player.setVelocityX(v); player.flipX = false; }
-                else if(cursors.right.isDown || keys.D.isDown) { player.setVelocityX(-v); player.flipX = true; }
-                else player.setVelocityX(0);
+                if(cursors.left.isDown || keys.A.isDown) { player.setVelocityX(v); player.flipX = false; } else if(cursors.right.isDown || keys.D.isDown) { player.setVelocityX(-v); player.flipX = true; } else player.setVelocityX(0);
             } else {
-                if(cursors.left.isDown || keys.A.isDown) { player.setVelocityX(-v); player.flipX = true; }
-                else if(cursors.right.isDown || keys.D.isDown) { player.setVelocityX(v); player.flipX = false; }
-                else player.setVelocityX(0);
+                if(cursors.left.isDown || keys.A.isDown) { player.setVelocityX(-v); player.flipX = true; } else if(cursors.right.isDown || keys.D.isDown) { player.setVelocityX(v); player.flipX = false; } else player.setVelocityX(0);
             }
 
             if (player.body.touching.down) { canDoubleJump = true; }
 
             if (Phaser.Input.Keyboard.JustDown(cursors.up) || Phaser.Input.Keyboard.JustDown(keys.W) || Phaser.Input.Keyboard.JustDown(cursors.space)) {
-                if (player.body.touching.down) { player.setVelocityY(-600); SoundEngine.play('jump'); } 
-                else if (canDoubleJump) { player.setVelocityY(-500); canDoubleJump = false; SoundEngine.play('jump'); }
+                if (player.body.touching.down) { player.setVelocityY(isTiny ? -400 : -600); SoundEngine.play('jump'); } 
+                else if (canDoubleJump) { player.setVelocityY(isTiny ? -350 : -500); canDoubleJump = false; SoundEngine.play('jump'); }
+            }
+
+            // הפתעה 2: כיווץ (S)
+            if (Phaser.Input.Keyboard.JustDown(shrinkKey)) { isTiny = !isTiny; player.setScale(isTiny ? 0.5 : 1); SoundEngine.play('coin'); }
+
+            // הפתעה 3: ג'טפאק (J)
+            if (jetpackKey.isDown) { player.setVelocityY(-300); explodeParticles(this, player.x, player.y+15, 0xFFA500, 2); }
+
+            // הפתעה 4: חור שחור (B)
+            if (Phaser.Input.Keyboard.JustDown(blackHoleKey) && !blackHoleUsed) {
+                blackHoleUsed = true; SoundEngine.play('hit'); explodeParticles(this, player.x, player.y, 0x800080, 50);
+                enemies.getChildren().forEach(e => { e.x = player.x; e.y = player.y; e.destroy(); score += 20; }); scoreText.setText('ניקוד: ' + score);
+            }
+
+            // הפתעה 5: מטאור אשי (M)
+            if (Phaser.Input.Keyboard.JustDown(meteorKey)) {
+                let m = fireballs.create(player.x + (player.flipX ? -300 : 300), 0, 'powerTex').setTint(0xFF0000); m.body.allowGravity = true; m.setVelocityY(500); SoundEngine.play('shoot');
             }
 
             // ירי קרח (X)
-            if (Phaser.Input.Keyboard.JustDown(keys.X) && hasIcePower && time > lastShotTime + 500) {
-                lastShotTime = time; SoundEngine.play('shoot');
-                let ice = iceballs.create(player.x, player.y, 'iceTex'); 
-                ice.setVelocityX(player.flipX ? -500 : 500); ice.body.allowGravity = false;
+            if (Phaser.Input.Keyboard.JustDown(shootKey) && time > lastShotTime + 500) {
+                lastShotTime = time; SoundEngine.play('shoot'); let ice = iceballs.create(player.x, player.y, 'iceTex'); ice.setVelocityX(player.flipX ? -500 : 500); ice.body.allowGravity = false;
             }
 
             // דאש (Z)
-            if (Phaser.Input.Keyboard.JustDown(keys.Z) && canDash) { 
-                canDash = false; player.setVelocityX(player.flipX ? -1000 : 1000); SoundEngine.play('shoot'); 
-                this.time.delayedCall(1000, () => canDash = true); 
-            }
+            if (Phaser.Input.Keyboard.JustDown(dashKey) && canDash) { canDash = false; player.setVelocityX(player.flipX ? -1000 : 1000); SoundEngine.play('shoot'); this.time.delayedCall(1000, () => canDash = true); }
 
             // הילוך איטי (T)
-            if (Phaser.Input.Keyboard.JustDown(slowMoKey)) { 
-                isSlowMo = !isSlowMo; this.physics.world.timeScale = isSlowMo ? 2.5 : 1; 
-                centerText.setText(isSlowMo ? 'הילוך איטי!' : '').setVisible(isSlowMo).setFill('#FFF'); 
-            }
+            if (Phaser.Input.Keyboard.JustDown(slowMoKey)) { isSlowMo = !isSlowMo; this.physics.world.timeScale = isSlowMo ? 2.5 : 1; centerText.setText(isSlowMo ? 'הילוך איטי!' : '').setVisible(isSlowMo).setFill('#FFF'); }
 
             // גשם מטבעות (C)
-            if (Phaser.Input.Keyboard.JustDown(coinRainKey) && !usedCoinRain) { 
-                usedCoinRain = true; SoundEngine.play('coin'); 
-                for(let i=0; i<20; i++) { 
-                    let c = coinsGroup.create(player.x + Phaser.Math.Between(-200, 200), player.y - Phaser.Math.Between(300, 600), 'coinTex'); 
-                    c.setBounce(0.5); c.setCollideWorldBounds(true); 
-                } 
-            }
+            if (Phaser.Input.Keyboard.JustDown(coinRainKey) && !usedCoinRain) { usedCoinRain = true; SoundEngine.play('coin'); for(let i=0; i<20; i++) { let c = coinsGroup.create(player.x + Phaser.Math.Between(-200, 200), player.y - Phaser.Math.Between(300, 600), 'coinTex'); c.setBounce(0.5); c.setCollideWorldBounds(true); } }
+
+            if(time % 30000 < 50) { bubbleShield.setAlpha(1); isInvincible = true; this.time.delayedCall(1000, () => { bubbleShield.setAlpha(0); isInvincible = false; }); }
+            bubbleShield.x = player.x; bubbleShield.y = player.y;
 
             if (currentLevel === 3 && boss && boss.getData('isAlive')) {
+                bossTalk.setPosition(boss.x, boss.y - 80);
                 if (player.x > 2200) bossHealthText.setText('בוס: ' + boss.getData('hp') + '/10'); else bossHealthText.setText('');
             }
 
@@ -356,13 +286,13 @@
             if (!boss.getData('isAlive')) return;
             let hp = boss.getData('hp') - damage;
             boss.setData('hp', hp); boss.setTint(0xFFFFFF); scene.time.delayedCall(100, () => boss.clearTint()); SoundEngine.play('hit');
+            
+            // הפתעה 10: הבוס משתגר!
+            if(hp <= 4 && Math.random() > 0.5) { boss.x = player.x + (player.flipX ? -200 : 200); boss.y = player.y - 100; explodeParticles(scene, boss.x, boss.y, 0x800080, 20); }
+            
             if (hp <= 5 && !boss.getData('enraged')) boss.setData('enraged', true);
             if (hp <= 2) boss.setTint(0x000000);
-            if (hp <= 0) {
-                boss.setData('isAlive', false); explodeParticles(scene, boss.x, boss.y, 0xFF0000, 50); 
-                boss.destroy(); gameActive = false; centerText.setText('ניצחון אגדי!').setVisible(true).setFill('#00FF00'); 
-                scene.cameras.main.zoomTo(2, 2000);
-            }
+            if (hp <= 0) { boss.setData('isAlive', false); explodeParticles(scene, boss.x, boss.y, 0xFF0000, 50); boss.destroy(); gameActive = false; centerText.setText('ניצחון אגדי!').setVisible(true).setFill('#00FF00'); scene.cameras.main.zoomTo(2, 2000); }
         }
 
         function takeDamage(scene) {
@@ -376,8 +306,7 @@
 
         function startBossAI(scene) {
             scene.time.addEvent({ delay: 1500, loop: true, callback: () => {
-                if (!gameActive || !boss || !boss.getData('isAlive')) return;
-                let enraged = boss.getData('enraged');
+                if (!gameActive || !boss || !boss.getData('isAlive')) return; let enraged = boss.getData('enraged');
                 boss.setVelocityY(enraged ? -700 : -600); boss.setVelocityX(player.x < boss.x ? -200 : 200);
             }});
             scene.time.addEvent({ delay: 2500, loop: true, callback: () => {
@@ -391,23 +320,24 @@
                     });
                 }
             }});
+            
+            // הפתעה 9: גייזרים של לבה בשלב הבוס
+            scene.time.addEvent({ delay: 4000, loop: true, callback: () => {
+                if (!gameActive || !boss || !boss.getData('isAlive')) return;
+                let fb = fireballs.create(player.x + Phaser.Math.Between(-200, 200), 550, 'powerTex').setTint(0xFF4500); fb.body.allowGravity = true; fb.setVelocityY(-600);
+            }});
         }
 
         function startTrollEvents(scene) {
-            scene.time.addEvent({ delay: 12000, loop: true, callback: () => {
-                if (!gameActive) return; enemies.getChildren().forEach(e => e.setAlpha(0.1));
-                scene.time.delayedCall(3000, () => enemies.getChildren().forEach(e => e.setAlpha(1)));
-            }});
+            scene.time.addEvent({ delay: 12000, loop: true, callback: () => { if (!gameActive) return; enemies.getChildren().forEach(e => e.setAlpha(0.1)); scene.time.delayedCall(3000, () => enemies.getChildren().forEach(e => e.setAlpha(1))); }});
             scene.time.addEvent({ delay: 15000, loop: true, callback: () => {
                 if (!gameActive || currentLevel === 3) return;
                 centerText.setText('אזהרה: מטאורים!').setVisible(true).setFill('#FF0000'); SoundEngine.play('shoot');
                 scene.time.delayedCall(1500, () => {
                     if (!gameActive) return; centerText.setVisible(false);
                     for(let i=0; i<6; i++) {
-                        let fb = fireballs.create(player.x + Phaser.Math.Between(-400, 400), -50, 'powerTex').setTint(0xFF0000);
-                        fb.body.allowGravity = true; fb.setVelocityY(Phaser.Math.Between(200, 400));
-                        scene.physics.add.collider(fb, [ground, platforms], (f) => f.destroy());
-                        scene.physics.add.overlap(player, fb, (p, f) => { f.destroy(); takeDamage(scene); });
+                        let fb = fireballs.create(player.x + Phaser.Math.Between(-400, 400), -50, 'powerTex').setTint(0xFF0000); fb.body.allowGravity = true; fb.setVelocityY(Phaser.Math.Between(200, 400));
+                        scene.physics.add.collider(fb, [ground, platforms], (f) => f.destroy()); scene.physics.add.overlap(player, fb, (p, f) => { f.destroy(); takeDamage(scene); });
                     }
                 });
             }});
