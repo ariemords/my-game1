@@ -3,377 +3,151 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Platformer Ultra - Final Edition</title>
+    <title>Platformer Ultra - Sound Edition</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
     <style>
-        body { 
-            margin: 0; 
-            background-color: #111; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            height: 100vh; 
-            overflow: hidden; 
-            color: white; 
-            font-family: Arial, sans-serif; 
-        }
-        #game-container { 
-            box-shadow: 0 0 30px rgba(0,0,0,0.8); 
-            border-radius: 10px; 
-            overflow: hidden; 
-        }
+        body { margin: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; color: white; font-family: Arial, sans-serif; }
+        #game-container { box-shadow: 0 0 30px rgba(0,0,0,0.8); border-radius: 10px; overflow: hidden; }
     </style>
 </head>
 <body>
-
     <div id="game-container"></div>
-
     <script>
-        const config = {
-            type: Phaser.AUTO,
-            width: 800,
-            height: 600,
-            parent: 'game-container',
-            physics: {
-                default: 'arcade',
-                arcade: {
-                    gravity: { y: 1000 },
-                    debug: false // ה-Debug מכובה!
+        // --- מערכת צלילים סינתטיים (Web Audio API) ---
+        const SoundEngine = {
+            ctx: new (window.AudioContext || window.webkitAudioContext)(),
+            play(type) {
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                const now = this.ctx.currentTime;
+
+                if (type === 'jump') {
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(150, now);
+                    osc.frequency.exponentialRampToValueAtTime(600, now + 0.1);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                    osc.start(); osc.stop(now + 0.1);
+                } else if (type === 'coin') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(900, now);
+                    osc.frequency.setValueAtTime(1200, now + 0.05);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                    osc.start(); osc.stop(now + 0.2);
+                } else if (type === 'hit') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(100, now);
+                    osc.frequency.linearRampToValueAtTime(20, now + 0.3);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(); osc.stop(now + 0.3);
                 }
-            },
-            scene: {
-                preload: preload,
-                create: create,
-                update: update
             }
         };
 
+        const config = {
+            type: Phaser.AUTO,
+            width: 800, height: 600,
+            parent: 'game-container',
+            physics: { default: 'arcade', arcade: { gravity: { y: 1000 }, debug: false } },
+            scene: { preload: preload, create: create, update: update }
+        };
+
         const game = new Phaser.Game(config);
-
-        // משתנים גלובליים
-        let player, ground, platforms, mysteryBlocks, powerUps, enemies, fireballs, boss;
-        let cursors, keys, restartKey;
-        let score, health, bossHealth;
+        let player, ground, platforms, mysteryBlocks, powerUps, enemies, boss, cursors, keys, restartKey;
+        let score = 0, health = 3, bossHealth = 3, gameActive = false, isInvincible = false, currentSpeed = 250;
         let scoreText, healthText, bossHealthText, centerText;
-        let gameActive;
-        
-        let isInvincible = false;
-        let isSpeedBoosted = false;
-        let originalSpeed = 250;
-        let currentSpeed = originalSpeed;
 
-       function preload() {
-            // ==========================================
-            // 🎵 כאן טוענים את המוזיקה 🎵
-            // ==========================================
-            // אם יש לך קובץ בשם bgm.mp3, תמחק את הלוכסנים (//) בשורה הבאה:
-            this.load.audio('bgm', 'bgm.mp3');
-        }
-        }
+        function preload() {} // אין צורך בטעינת קבצים חיצוניים!
 
         function create() {
-            // איפוס משתנים בכל פעם שהמשחק מתחיל מחדש
-            score = 0;
-            health = 3;
-            bossHealth = 3;
-            gameActive = false;
-            isInvincible = false;
-            isSpeedBoosted = false;
-            currentSpeed = originalSpeed;
-
             this.physics.world.setBounds(0, 0, 3200, 600);
-            this.cameras.main.setBounds(0, 0, 3200, 600);
-            this.cameras.main.setBackgroundColor('#87CEEB');
-
-           // ==========================================
-            // 🎵 כאן מפעילים את המוזיקה 🎵
-            // ==========================================
-            // תמחק את הלוכסנים כדי להפעיל אותה:
-            let music = this.sound.add('bgm', { loop: true, volume: 0.3 });
-            music.play();
-
-            createTextures(this);
-
-            // יצירת רצפה מוצקה
-            ground = this.physics.add.staticGroup();
-            for (let x = 0; x < 3200; x += 400) {
-                ground.create(x + 200, 580, 'groundTexture');
-            }
-
-            // יצירת פלטפורמות שבאוויר (One-Way)
-            platforms = this.physics.add.staticGroup();
-            let p1 = platforms.create(500, 450, 'platformTexture');
-            let p2 = platforms.create(900, 350, 'platformTexture');
-            let p3 = platforms.create(1300, 450, 'platformTexture');
-            let p4 = platforms.create(2000, 350, 'platformTexture');
+            this.cameras.main.setBounds(0, 0, 3200, 600).setBackgroundColor('#87CEEB');
             
-            // הגדרה מיוחדת: אפשר לקפוץ דרכן מלמטה!
-            platforms.getChildren().forEach(plat => {
-                plat.body.checkCollision.down = false;
-                plat.body.checkCollision.left = false;
-                plat.body.checkCollision.right = false;
+            // יצירת טקסטורות
+            let g = this.make.graphics({ x: 0, y: 0, add: false });
+            g.fillStyle(0x00FF00); g.fillRect(0, 0, 32, 32); g.generateTexture('playerTexture', 32, 32); g.clear();
+            g.fillStyle(0x8B4513); g.fillRect(0, 0, 400, 40); g.generateTexture('groundTexture', 400, 40); g.clear();
+            g.fillStyle(0xDEB887); g.fillRect(0, 0, 150, 20); g.generateTexture('platformTexture', 150, 20); g.clear();
+            g.fillStyle(0xFF8C00); g.fillRect(0, 0, 40, 40); g.generateTexture('blockTexture', 40, 40); g.clear();
+            g.fillStyle(0xFFFFFF); g.fillRect(0, 0, 20, 20); g.generateTexture('powerTexture', 20, 20); g.clear();
+            g.fillStyle(0xFF0000); g.fillRect(0, 0, 100, 100); g.generateTexture('bossTexture', 100, 100);
+
+            ground = this.physics.add.staticGroup();
+            for (let x = 0; x < 3200; x += 400) ground.create(x + 200, 580, 'groundTexture');
+
+            platforms = this.physics.add.staticGroup();
+            [500, 900, 1300, 2000].forEach((x, i) => {
+                let p = platforms.create(x, 450 - (i*30), 'platformTexture');
+                p.body.checkCollision.down = false; p.body.checkCollision.left = false; p.body.checkCollision.right = false;
             });
 
-            // קוביות כוח
             mysteryBlocks = this.physics.add.staticGroup();
-            mysteryBlocks.create(450, 300, 'blockTexture').setData('used', false);
-            mysteryBlocks.create(900, 200, 'blockTexture').setData('used', false);
-            mysteryBlocks.create(1400, 300, 'blockTexture').setData('used', false);
+            [[450, 300], [900, 200], [1400, 300]].forEach(pos => mysteryBlocks.create(pos[0], pos[1], 'blockTexture').setData('used', false));
 
             powerUps = this.physics.add.group();
-
-            // יצירת אויבים רגילים בדרך
             enemies = this.physics.add.group();
-            enemies.create(600, 500, 'enemyTexture').setVelocityX(-100);
-            enemies.create(1100, 500, 'enemyTexture').setVelocityX(100);
-            enemies.create(1600, 500, 'enemyTexture').setVelocityX(-100);
-            enemies.create(2300, 500, 'enemyTexture').setVelocityX(100);
-            
-            // גורם לאויבים לקפוץ מקצה לקצה
-            enemies.getChildren().forEach(enemy => {
-                enemy.setBounceX(1);
-                enemy.setCollideWorldBounds(true);
+            [[600, 500], [1100, 500], [1600, 500], [2300, 500]].forEach(pos => {
+                let e = enemies.create(pos[0], pos[1], 'playerTexture').setTint(0x800080).setVelocityX(100).setBounceX(1).setCollideWorldBounds(true);
             });
 
-            // יצירת שחקן
-            player = this.physics.add.sprite(100, 450, 'playerTexture');
-            player.setBounce(0.1);
-            player.setCollideWorldBounds(true);
+            player = this.physics.add.sprite(100, 450, 'playerTexture').setBounce(0.1).setCollideWorldBounds(true);
             this.cameras.main.startFollow(player, true, 0.05, 0.05);
 
-            // יצירת הבוס
-            boss = this.physics.add.sprite(2900, 400, 'bossTexture');
-            boss.setBounce(0.2);
-            boss.setCollideWorldBounds(true);
-            boss.setData('isAlive', true);
+            boss = this.physics.add.sprite(2900, 400, 'bossTexture').setBounce(0.2).setCollideWorldBounds(true).setData('isAlive', true);
 
-            fireballs = this.physics.add.group({ allowGravity: false });
-
-            // התנגשויות (Collisions)
-            this.physics.add.collider(player, ground);
-            this.physics.add.collider(player, platforms);
+            this.physics.add.collider(player, [ground, platforms]);
             this.physics.add.collider(enemies, ground);
             this.physics.add.collider(boss, ground);
-            this.physics.add.collider(powerUps, ground);
-            this.physics.add.collider(powerUps, platforms);
-            
-            this.physics.add.collider(player, mysteryBlocks, hitMysteryBlock, null, this);
-            this.physics.add.overlap(player, powerUps, collectPowerUp, null, this);
-            this.physics.add.collider(player, enemies, handleEnemyCollision, null, this);
-            this.physics.add.collider(player, boss, handleBossCollision, null, this);
-
-            // מקשים
-            cursors = this.input.keyboard.createCursorKeys();
-            keys = this.input.keyboard.addKeys('W,A,D,SPACE');
-            restartKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R);
-
-            // טקסטים
-            scoreText = this.add.text(16, 16, 'ניקוד: 0', { fontSize: '24px', fill: '#000', fontStyle: 'bold' }).setScrollFactor(0);
-            healthText = this.add.text(16, 50, 'חיים: 3', { fontSize: '24px', fill: '#000', fontStyle: 'bold' }).setScrollFactor(0);
-            bossHealthText = this.add.text(600, 16, '', { fontSize: '24px', fill: '#FF0000', fontStyle: 'bold' }).setScrollFactor(0);
-            
-            centerText = this.add.text(400, 300, 'רווח - התחל משחק\nR - איפוס מהיר', { fontSize: '36px', fill: '#000', fontStyle: 'bold', align: 'center' }).setOrigin(0.5).setScrollFactor(0);
-
-            // הפעלת המשחק
-            this.input.keyboard.on('keydown-SPACE', () => {
-                if (!gameActive && centerText.text.includes('התחל')) {
-                    gameActive = true;
-                    centerText.setVisible(false);
-                    startBossAI(this);
+            this.physics.add.collider(player, mysteryBlocks, (p, b) => {
+                if (p.body.touching.up && b.body.touching.down && !b.getData('used')) {
+                    b.setData('used', true); b.setTint(0x555555);
+                    SoundEngine.play('coin');
+                    let pwr = powerUps.create(b.x, b.y - 30, 'powerTexture').setTint(0xFFFF00).setVelocityY(-200);
                 }
             });
+            this.physics.add.overlap(player, powerUps, (p, pw) => { pw.destroy(); score += 50; scoreText.setText('ניקוד: ' + score); SoundEngine.play('coin'); });
+            this.physics.add.collider(player, enemies, (p, e) => {
+                if (p.body.touching.down && e.body.touching.up) { e.destroy(); p.setVelocityY(-300); score += 20; SoundEngine.play('jump'); }
+                else takeDamage(this);
+            });
+            this.physics.add.collider(player, boss, (p, b) => {
+                if (p.body.touching.down && b.body.touching.up) { p.setVelocityY(-400); bossHealth--; SoundEngine.play('hit'); if(bossHealth<=0) { b.destroy(); gameActive=false; centerText.setText('ניצחון!').setVisible(true); } }
+                else takeDamage(this);
+            });
+
+            cursors = this.input.keyboard.createCursorKeys();
+            keys = this.input.keyboard.addKeys('W,A,D,SPACE');
+            restartKey = this.input.keyboard.addKey('R');
+
+            scoreText = this.add.text(16, 16, 'ניקוד: 0', { fontSize: '24px', fill: '#000' }).setScrollFactor(0);
+            healthText = this.add.text(16, 50, 'חיים: 3', { fontSize: '24px', fill: '#000' }).setScrollFactor(0);
+            centerText = this.add.text(400, 300, 'רווח - התחל | R - איפוס', { fontSize: '32px', fill: '#000' }).setOrigin(0.5).setScrollFactor(0);
+
+            this.input.keyboard.on('keydown-SPACE', () => { if (!gameActive) { gameActive = true; centerText.setVisible(false); } });
         }
 
         function update() {
-            // כפתור אתחול (R) זמין תמיד
-            if (Phaser.Input.Keyboard.JustDown(restartKey)) {
-                this.scene.restart();
-                return;
-            }
-
+            if (Phaser.Input.Keyboard.JustDown(restartKey)) this.scene.restart();
             if (!gameActive) return;
-
-            // תנועה ימינה/שמאלה
             if (cursors.left.isDown || keys.A.isDown) player.setVelocityX(-currentSpeed);
             else if (cursors.right.isDown || keys.D.isDown) player.setVelocityX(currentSpeed);
             else player.setVelocityX(0);
-
-            // קפיצה
-            if ((cursors.up.isDown || keys.W.isDown || cursors.space.isDown) && player.body.touching.down) {
-                player.setVelocityY(-600);
-            }
-
-            // חשיפת חיים של הבוס
-            if (player.x > 2200 && boss.getData('isAlive')) {
-                bossHealthText.setText('בוס: ' + bossHealth);
-            } else {
-                bossHealthText.setText('');
-            }
-
-            // נפילה לתהום
-            if (player.y > 580) {
-                takeDamage(this);
-                player.x = Math.max(50, player.x - 300); // זורק אותו קצת אחורה
-                player.y = 100;
-                player.setVelocity(0);
-            }
-        }
-
-        // --- פונקציות קוביות וכוחות ---
-        function hitMysteryBlock(player, block) {
-            if (player.body.touching.up && block.body.touching.down && !block.getData('used')) {
-                block.setData('used', true);
-                block.setTint(0x555555);
-                this.tweens.add({ targets: block, y: block.y - 10, duration: 50, yoyo: true });
-
-                let powerType = Phaser.Math.Between(0, 2);
-                let color, typeName;
-                
-                if (powerType === 0) { color = 0xFF0000; typeName = 'health'; }
-                else if (powerType === 1) { color = 0xFFFF00; typeName = 'star'; }
-                else { color = 0x00FFFF; typeName = 'speed'; }
-
-                let power = powerUps.create(block.x, block.y - 30, 'powerTexture').setTint(color);
-                power.setData('type', typeName);
-                power.setVelocityY(-250);
-                power.setVelocityX(Phaser.Math.Between(-50, 50));
-                power.setBounce(0.5);
-            }
-        }
-
-        function collectPowerUp(player, power) {
-            let type = power.getData('type');
-            power.destroy();
-            score += 50;
-            scoreText.setText('ניקוד: ' + score);
-
-            if (type === 'health') {
-                if (health < 5) health++;
-                healthText.setText('חיים: ' + health);
-                player.setTint(0xFF0000);
-                this.time.delayedCall(300, () => player.clearTint());
-            } else if (type === 'star') {
-                isInvincible = true;
-                player.setTint(0xFFFF00);
-                this.time.delayedCall(5000, () => {
-                    isInvincible = false;
-                    if(!isSpeedBoosted) player.clearTint();
-                });
-            } else if (type === 'speed') {
-                isSpeedBoosted = true;
-                currentSpeed = 450;
-                player.setTint(0x00FFFF);
-                this.time.delayedCall(5000, () => {
-                    isSpeedBoosted = false;
-                    currentSpeed = originalSpeed;
-                    if(!isInvincible) player.clearTint();
-                });
-            }
-        }
-
-        // --- אויבים ---
-        function handleEnemyCollision(player, enemy) {
-            if (player.body.touching.down && enemy.body.touching.up && player.body.velocity.y > 0) {
-                enemy.destroy(); // מעיכה!
-                player.setVelocityY(-350);
-                score += 20;
-                scoreText.setText('ניקוד: ' + score);
-            } else {
-                takeDamage(this); // פגיעה מהצד
-            }
-        }
-
-        // --- בוס ---
-        function startBossAI(scene) {
-            scene.time.addEvent({
-                delay: 1500,
-                loop: true,
-                callback: () => {
-                    if (boss.getData('isAlive') && gameActive && player.x > 2000) {
-                        boss.setVelocityY(-600);
-                        boss.setVelocityX(player.x < boss.x ? -150 : 150);
-                    }
-                }
-            });
-
-            scene.time.addEvent({
-                delay: 2500,
-                loop: true,
-                callback: () => {
-                    if (boss.getData('isAlive') && gameActive && player.x > 2000) {
-                        let fb = fireballs.create(boss.x, boss.y + 20, 'powerTexture').setTint(0xFFA500);
-                        scene.physics.add.collider(fb, ground, (f) => f.destroy());
-                        scene.physics.add.overlap(player, fb, (p, f) => { f.destroy(); takeDamage(scene); });
-                        scene.physics.moveToObject(fb, player, 350);
-                    }
-                }
-            });
-        }
-
-        function handleBossCollision(player, boss) {
-            if (!boss.getData('isAlive')) return;
-
-            if (player.body.touching.down && boss.body.touching.up && player.body.velocity.y > 0) {
-                player.setVelocityY(-500);
-                bossHealth--;
-                bossHealthText.setText('בוס: ' + bossHealth);
-                boss.setTint(0xFFFFFF);
-                this.time.delayedCall(100, () => boss.clearTint());
-
-                if (bossHealth <= 0) {
-                    boss.setData('isAlive', false);
-                    boss.setTint(0x555555);
-                    boss.body.enable = false;
-                    this.tweens.add({ targets: boss, alpha: 0, duration: 1000 });
-                    
-                    gameActive = false;
-                    centerText.setText('ניצחון!\nלחץ R כדי לשחק שוב').setVisible(true).setFill('#00FF00');
-                }
-            } else {
-                takeDamage(this);
+            if ((cursors.up.isDown || keys.W.isDown || cursors.space.isDown) && player.body.touching.down) { 
+                player.setVelocityY(-600); 
+                SoundEngine.play('jump'); 
             }
         }
 
         function takeDamage(scene) {
             if (isInvincible || !gameActive) return;
-
-            health--;
-            healthText.setText('חיים: ' + health);
-            
-            isInvincible = true;
-            player.setTint(0xFF0000);
-            scene.time.delayedCall(200, () => player.clearTint());
-            scene.time.delayedCall(400, () => player.setTint(0xFF0000));
-            scene.time.delayedCall(800, () => {
-                player.clearTint();
-                isInvincible = false;
-            });
-
-            if (health <= 0) {
-                gameActive = false;
-                player.setTint(0xFF0000);
-                centerText.setText('פסילה!\nלחץ R כדי להתחיל מחדש').setVisible(true).setFill('#FF0000');
-            }
-        }
-
-        // --- גרפיקה פנימית ---
-        function createTextures(scene) {
-            let g = scene.make.graphics({ x: 0, y: 0, add: false });
-            
-            g.fillStyle(0x00FF00); g.fillRect(0, 0, 32, 32); g.generateTexture('playerTexture', 32, 32); g.clear();
-            g.fillStyle(0x8B4513); g.fillRect(0, 0, 400, 40); g.generateTexture('groundTexture', 400, 40); g.clear();
-            g.fillStyle(0xDEB887); g.fillRect(0, 0, 150, 20); g.generateTexture('platformTexture', 150, 20); g.clear();
-            
-            g.fillStyle(0xFF8C00); g.fillRect(0, 0, 40, 40); g.lineStyle(2, 0x000000); g.strokeRect(0, 0, 40, 40); g.generateTexture('blockTexture', 40, 40); g.clear();
-            g.fillStyle(0xFFFFFF); g.fillRect(0, 0, 20, 20); g.generateTexture('powerTexture', 20, 20); g.clear();
-            
-            g.fillStyle(0x800080); g.fillRect(0, 0, 32, 32); // אויב סגול
-            g.fillStyle(0x000000); g.fillRect(8, 8, 5, 5); g.fillRect(20, 8, 5, 5); // עיניים לאויב
-            g.generateTexture('enemyTexture', 32, 32); g.clear();
-
-            g.fillStyle(0xFF0000); g.fillRect(0, 0, 100, 100); 
-            g.fillStyle(0x000000); g.fillRect(20, 20, 20, 20); g.fillRect(60, 20, 20, 20);
-            g.generateTexture('bossTexture', 100, 100); g.clear();
+            health--; healthText.setText('חיים: ' + health);
+            SoundEngine.play('hit');
+            isInvincible = true; scene.time.delayedCall(1000, () => isInvincible = false);
+            if (health <= 0) { gameActive = false; centerText.setText('פסילה! R לאיפוס').setVisible(true); }
         }
     </script>
 </body>
