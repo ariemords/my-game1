@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Platformer Ultra - Sound Edition</title>
+    <title>Platformer Ultra - Safe Sound Edition</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
     <style>
         body { margin: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; color: white; font-family: Arial, sans-serif; }
@@ -13,10 +13,17 @@
 <body>
     <div id="game-container"></div>
     <script>
-        // --- מערכת צלילים סינתטיים (Web Audio API) ---
+        // --- מערכת צלילים מתוקנת (נטענת רק בלחיצה!) ---
         const SoundEngine = {
-            ctx: new (window.AudioContext || window.webkitAudioContext)(),
+            ctx: null,
+            init() {
+                // המערכת הזו תופעל רק כשהשחקן ילחץ רווח
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            },
             play(type) {
+                if (!this.ctx) return;
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.connect(gain);
@@ -59,15 +66,18 @@
         const game = new Phaser.Game(config);
         let player, ground, platforms, mysteryBlocks, powerUps, enemies, boss, cursors, keys, restartKey;
         let score = 0, health = 3, bossHealth = 3, gameActive = false, isInvincible = false, currentSpeed = 250;
-        let scoreText, healthText, bossHealthText, centerText;
+        let scoreText, healthText, centerText;
 
-        function preload() {} // אין צורך בטעינת קבצים חיצוניים!
+        function preload() {}
 
         function create() {
+            // איפוס מצב בכל התחלה מחדש
+            score = 0; health = 3; bossHealth = 3; gameActive = false; isInvincible = false;
+
             this.physics.world.setBounds(0, 0, 3200, 600);
             this.cameras.main.setBounds(0, 0, 3200, 600).setBackgroundColor('#87CEEB');
             
-            // יצירת טקסטורות
+            // ציור הגרפיקה הפנימית
             let g = this.make.graphics({ x: 0, y: 0, add: false });
             g.fillStyle(0x00FF00); g.fillRect(0, 0, 32, 32); g.generateTexture('playerTexture', 32, 32); g.clear();
             g.fillStyle(0x8B4513); g.fillRect(0, 0, 400, 40); g.generateTexture('groundTexture', 400, 40); g.clear();
@@ -82,7 +92,9 @@
             platforms = this.physics.add.staticGroup();
             [500, 900, 1300, 2000].forEach((x, i) => {
                 let p = platforms.create(x, 450 - (i*30), 'platformTexture');
-                p.body.checkCollision.down = false; p.body.checkCollision.left = false; p.body.checkCollision.right = false;
+                p.body.checkCollision.down = false; 
+                p.body.checkCollision.left = false; 
+                p.body.checkCollision.right = false;
             });
 
             mysteryBlocks = this.physics.add.staticGroup();
@@ -99,9 +111,14 @@
 
             boss = this.physics.add.sprite(2900, 400, 'bossTexture').setBounce(0.2).setCollideWorldBounds(true).setData('isAlive', true);
 
-            this.physics.add.collider(player, [ground, platforms]);
+            // התנגשויות מסודרות
+            this.physics.add.collider(player, ground);
+            this.physics.add.collider(player, platforms);
+            this.physics.add.collider(powerUps, ground);
+            this.physics.add.collider(powerUps, platforms);
             this.physics.add.collider(enemies, ground);
             this.physics.add.collider(boss, ground);
+            
             this.physics.add.collider(player, mysteryBlocks, (p, b) => {
                 if (p.body.touching.up && b.body.touching.down && !b.getData('used')) {
                     b.setData('used', true); b.setTint(0x555555);
@@ -109,33 +126,49 @@
                     let pwr = powerUps.create(b.x, b.y - 30, 'powerTexture').setTint(0xFFFF00).setVelocityY(-200);
                 }
             });
-            this.physics.add.overlap(player, powerUps, (p, pw) => { pw.destroy(); score += 50; scoreText.setText('ניקוד: ' + score); SoundEngine.play('coin'); });
-            this.physics.add.collider(player, enemies, (p, e) => {
-                if (p.body.touching.down && e.body.touching.up) { e.destroy(); p.setVelocityY(-300); score += 20; SoundEngine.play('jump'); }
-                else takeDamage(this);
+            
+            this.physics.add.overlap(player, powerUps, (p, pw) => { 
+                pw.destroy(); score += 50; scoreText.setText('ניקוד: ' + score); SoundEngine.play('coin'); 
             });
+            
+            this.physics.add.collider(player, enemies, (p, e) => {
+                if (p.body.touching.down && e.body.touching.up) { 
+                    e.destroy(); p.setVelocityY(-350); score += 20; scoreText.setText('ניקוד: ' + score); SoundEngine.play('jump'); 
+                } else takeDamage(this);
+            });
+            
             this.physics.add.collider(player, boss, (p, b) => {
-                if (p.body.touching.down && b.body.touching.up) { p.setVelocityY(-400); bossHealth--; SoundEngine.play('hit'); if(bossHealth<=0) { b.destroy(); gameActive=false; centerText.setText('ניצחון!').setVisible(true); } }
-                else takeDamage(this);
+                if (p.body.touching.down && b.body.touching.up) { 
+                    p.setVelocityY(-400); bossHealth--; SoundEngine.play('hit'); 
+                    if(bossHealth<=0) { b.destroy(); gameActive=false; centerText.setText('ניצחון! R לאיפוס').setVisible(true); } 
+                } else takeDamage(this);
             });
 
             cursors = this.input.keyboard.createCursorKeys();
             keys = this.input.keyboard.addKeys('W,A,D,SPACE');
-            restartKey = this.input.keyboard.addKey('R');
+            restartKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R);
 
-            scoreText = this.add.text(16, 16, 'ניקוד: 0', { fontSize: '24px', fill: '#000' }).setScrollFactor(0);
-            healthText = this.add.text(16, 50, 'חיים: 3', { fontSize: '24px', fill: '#000' }).setScrollFactor(0);
-            centerText = this.add.text(400, 300, 'רווח - התחל | R - איפוס', { fontSize: '32px', fill: '#000' }).setOrigin(0.5).setScrollFactor(0);
+            scoreText = this.add.text(16, 16, 'ניקוד: 0', { fontSize: '24px', fill: '#000', fontStyle: 'bold' }).setScrollFactor(0);
+            healthText = this.add.text(16, 50, 'חיים: 3', { fontSize: '24px', fill: '#000', fontStyle: 'bold' }).setScrollFactor(0);
+            centerText = this.add.text(400, 300, 'רווח - התחל | R - איפוס', { fontSize: '32px', fill: '#000', fontStyle: 'bold' }).setOrigin(0.5).setScrollFactor(0);
 
-            this.input.keyboard.on('keydown-SPACE', () => { if (!gameActive) { gameActive = true; centerText.setVisible(false); } });
+            this.input.keyboard.on('keydown-SPACE', () => { 
+                if (!gameActive && centerText.text.includes('התחל')) { 
+                    gameActive = true; 
+                    centerText.setVisible(false);
+                    SoundEngine.init(); // מפעיל את הסאונד בצורה בטוחה!
+                } 
+            });
         }
 
         function update() {
             if (Phaser.Input.Keyboard.JustDown(restartKey)) this.scene.restart();
             if (!gameActive) return;
+            
             if (cursors.left.isDown || keys.A.isDown) player.setVelocityX(-currentSpeed);
             else if (cursors.right.isDown || keys.D.isDown) player.setVelocityX(currentSpeed);
             else player.setVelocityX(0);
+            
             if ((cursors.up.isDown || keys.W.isDown || cursors.space.isDown) && player.body.touching.down) { 
                 player.setVelocityY(-600); 
                 SoundEngine.play('jump'); 
@@ -146,7 +179,10 @@
             if (isInvincible || !gameActive) return;
             health--; healthText.setText('חיים: ' + health);
             SoundEngine.play('hit');
-            isInvincible = true; scene.time.delayedCall(1000, () => isInvincible = false);
+            isInvincible = true; 
+            player.setTint(0xFF0000);
+            scene.time.delayedCall(200, () => player.clearTint());
+            scene.time.delayedCall(1000, () => isInvincible = false);
             if (health <= 0) { gameActive = false; centerText.setText('פסילה! R לאיפוס').setVisible(true); }
         }
     </script>
