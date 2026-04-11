@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Platformer Ultimate - REAL DRAGON EDITION</title>
+    <title>Platformer Ultimate - THE DRAGON ABYSS</title>
     <link rel="shortcut icon" href="data:image/x-icon;," type="image/x-icon">
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
     <style>
@@ -32,8 +32,7 @@
             }
         };
 
-        // הוספנו את פונקציית preload להגדרות!
-        const config = { type: Phaser.AUTO, width: 800, height: 600, parent: 'game-container', physics: { default: 'arcade', arcade: { gravity: { y: 1000 }, debug: false } }, scene: { preload: preload, create: create, update: update } };
+        const config = { type: Phaser.AUTO, width: 800, height: 600, parent: 'game-container', physics: { default: 'arcade', arcade: { gravity: { y: 1000 }, debug: false } }, scene: { create: create, update: update } };
         const game = new Phaser.Game(config);
         
         let player, ground, platforms, iceGround, mysteryBlocks, powerUps, enemies, bats, boss, trueBoss;
@@ -52,19 +51,32 @@
         let scoreText, healthText, bossHealthText, centerText, levelText, bombText, bossTalk;
         let pet, bubbleShield, fogOverlay;
 
-        // טעינת תמונות אמיתיות
-        function preload() {
-            // כאן אנחנו טוענים את הדרקון האמיתי שלך!
-            // אם יופיע ריבוע ירוק מגעיל, סימן שהשם של הקובץ לא תואם או שאתה לא ב-Live Server
-            this.load.image('realDragon', 'dragon.png');
-        }
-
         function createTextures(scene) {
             let g = scene.make.graphics({ x: 0, y: 0, add: false });
             g.fillStyle(0x555555); g.fillRect(4, 0, 24, 8); g.fillStyle(0x777777); g.fillRect(0, 8, 32, 16); g.fillStyle(0x333333); g.fillRect(8, 12, 16, 8); g.fillStyle(0x00FF00); g.fillRect(12, 14, 2, 2); g.fillRect(18, 14, 2, 2); g.fillStyle(0x444444); g.fillRect(4, 24, 8, 8); g.fillRect(20, 24, 8, 8); g.generateTexture('playerTex', 32, 32); g.clear();
             g.fillStyle(0x800080, 0.9); g.fillCircle(16, 16, 14); g.fillStyle(0xFFFFFF); g.fillCircle(12, 14, 4); g.fillCircle(20, 14, 4); g.fillStyle(0x000000); g.fillCircle(12, 14, 2); g.fillCircle(20, 14, 2); g.generateTexture('enemyTex', 32, 32); g.clear();
             g.fillStyle(0xFF0000, 0.9); g.fillCircle(16, 16, 14); g.fillStyle(0xFFFFFF); g.fillCircle(12, 14, 4); g.fillCircle(20, 14, 4); g.fillStyle(0x000000); g.fillRect(10, 12, 12, 4); g.generateTexture('thiefTex', 32, 32); g.clear();
             g.fillStyle(0x222222); g.fillRect(12, 12, 8, 8); g.fillStyle(0x444444); g.moveTo(12, 12); g.lineTo(0, 4); g.lineTo(12, 16); g.fill(); g.moveTo(20, 12); g.lineTo(32, 4); g.lineTo(20, 16); g.fill(); g.fillStyle(0xFF0000); g.fillRect(14, 14, 1, 1); g.fillRect(17, 14, 1, 1); g.generateTexture('batTex', 32, 32); g.clear();
+            
+            // --- דרקון 1 (שלב 3) ---
+            g.fillStyle(0x228B22); g.fillRect(20, 30, 50, 40); // גוף
+            g.fillStyle(0x006400); g.fillRect(60, 10, 40, 30); // ראש
+            g.fillStyle(0xFFFFFF); g.fillRect(75, 15, 10, 10); // עין
+            g.fillStyle(0xFF0000); g.fillRect(80, 20, 5, 5); // אישון
+            g.fillStyle(0x8B0000); g.fillTriangle(30, 30, 10, -10, 50, 30); // כנף
+            g.fillStyle(0x228B22); g.fillRect(0, 50, 20, 10); // זנב
+            g.fillStyle(0xFFFF00); g.fillTriangle(0, 50, -10, 55, 0, 60); // קוץ בזנב
+            g.generateTexture('bossTex', 100, 100); g.clear();
+
+            // --- דרקון 2 - שד הריק (שלב 5) ---
+            g.fillStyle(0x4B0082); g.fillRect(20, 30, 60, 50); // גוף סגול עמוק
+            g.fillStyle(0x800080); g.fillRect(70, 10, 40, 40); // ראש
+            g.fillStyle(0x000000); g.fillTriangle(30, 30, -10, -20, 60, 30); // כנף שחורה
+            g.fillStyle(0xFFFFFF); g.fillRect(85, 20, 15, 15); // עין גדולה
+            g.fillStyle(0x00FFFF); g.fillRect(90, 25, 8, 8); // אישון טורקיז
+            g.fillStyle(0x4B0082); g.fillRect(0, 60, 20, 15); // זנב עבה
+            g.generateTexture('trueBossTex', 120, 120); g.clear();
+
             g.fillStyle(0x8B4513); g.fillRect(0, 0, 400, 40); g.fillStyle(0x228B22); g.fillRect(0, 0, 400, 8); g.generateTexture('groundTex', 400, 40); g.clear();
             g.fillStyle(0x00FFFF, 0.5); g.fillRect(0, 0, 400, 40); g.generateTexture('iceGroundTex', 400, 40); g.clear();
             g.fillStyle(0xDEB887); g.fillRect(0, 0, 150, 20); g.generateTexture('platTex', 150, 20); g.clear();
@@ -116,7 +128,7 @@
             this.input.keyboard.on('keydown-SPACE', startGame);
 
             function startGame() {
-                if (!gameActive && centerText.visible && !centerText.text.includes('ניצחון')) { gameActive = true; centerText.setVisible(false); SoundEngine.init(); if(currentLevel === 3 || currentLevel === 5) startBossAI(game.scene.scenes[0]); }
+                if (!gameActive && centerText.visible && !centerText.text.includes('ניצחון')) { gameActive = true; centerText.setVisible(false); SoundEngine.init(); if(currentLevel === 3 || currentLevel === 5) startBossAI(this); }
             }
 
             this.input.keyboard.on('keydown-R', () => { window.location.reload(); });
@@ -179,15 +191,7 @@
                 let p1 = portals.create(400, 300, 'portalTex'); let p2 = portals.create(1800, 200, 'portalTex'); p1.setData('target', p2); p2.setData('target', p1);
             } else if (level === 3) {
                 [600, 1200, 1800].forEach(x => { let fp = platforms.create(x, 350, 'platTex'); fp.setTint(0xAAAAAA); fp.body.enable = false; });
-                
-                // הדרקון האמיתי מוגדר כאן
-                boss = scene.physics.add.sprite(2900, 350, 'realDragon').setBounce(0.2).setCollideWorldBounds(true).setData('isAlive', true).setData('hp', 10);
-                boss.setDisplaySize(150, 150); // מתאים את הגודל של התמונה המקורית כדי שלא תהיה ענקית מדי
-                scene.physics.add.collider(boss, ground);
-                
-                // אנימציית ריחוף פשוטה (Tween) כדי לתת לדרקון תחושה חיה
-                scene.tweens.add({ targets: boss, y: boss.y - 20, duration: 1500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-                
+                boss = scene.physics.add.sprite(2900, 400, 'bossTex').setBounce(0.2).setCollideWorldBounds(true).setData('isAlive', true).setData('hp', 10); scene.physics.add.collider(boss, ground);
                 if(gameActive) startBossAI(scene);
             } else if (level === 4) {
                 [500, 1000, 1500, 2000, 2500].forEach((x, i) => { let p = platforms.create(x, 400, 'platTex'); p.body.checkCollision.down = false; });
@@ -198,14 +202,8 @@
                 let p3 = portals.create(300, 200, 'portalTex'); let p4 = portals.create(2600, 200, 'portalTex'); p3.setData('target', p4); p4.setData('target', p3);
             } else if (level === 5) {
                 [600, 1200, 1800, 2400].forEach((x) => { let p = platforms.create(x, 400, 'platTex'); p.body.checkCollision.down = false; });
-                
-                // הדרקון בשלב הסופי גם מוגדר כאן (מרחף גבוה יותר)
-                trueBoss = scene.physics.add.sprite(2900, 150, 'realDragon').setCollideWorldBounds(true).setData('isAlive', true).setData('hp', 20);
-                trueBoss.setDisplaySize(200, 200); // הבוס האחרון קצת יותר גדול
+                trueBoss = scene.physics.add.sprite(2900, 200, 'trueBossTex').setCollideWorldBounds(true).setData('isAlive', true).setData('hp', 20);
                 trueBoss.body.allowGravity = false; 
-                
-                scene.tweens.add({ targets: trueBoss, y: trueBoss.y - 30, duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-                
                 if(gameActive) startBossAI(scene);
             }
 
@@ -307,13 +305,14 @@
             let isTouchingGround = gravityFlipped ? player.body.touching.up : player.body.touching.down;
             if (isTouchingGround) { canDoubleJump = true; }
             
+            // קפיצה רגילה (W או חץ למעלה)
             if (canJumpTroll && (Phaser.Input.Keyboard.JustDown(cursors.up) || Phaser.Input.Keyboard.JustDown(keys.W))) {
                 let jv = isTiny ? 400 : (superJumpActive ? 900 : 600);
                 if (isTouchingGround) { player.setVelocityY(gravityFlipped ? jv : -jv); SoundEngine.play('jump'); } 
                 else if (canDoubleJump) { player.setVelocityY(gravityFlipped ? (jv-100) : -(jv-100)); canDoubleJump = false; SoundEngine.play('jump'); }
             }
 
-            // הפעלת הג'טפאק ברווח עובדת!
+            // ג'טפאק ברווח (SPACE) !
             if (cursors.space.isDown) { 
                 player.setVelocityY(gravityFlipped ? 300 : -300); 
                 explodeParticles(this, player.x, player.y+(gravityFlipped?-15:15), 0xFFA500, 2); 
@@ -332,7 +331,7 @@
             if(time % 30000 < 50) { bubbleShield.setAlpha(1); isInvincible = true; this.time.delayedCall(1000, () => { bubbleShield.setAlpha(0); isInvincible = false; }); }
             bubbleShield.x = player.x; bubbleShield.y = player.y;
 
-            if (currentLevel === 3 && boss && boss.getData('isAlive')) { bossTalk.setPosition(boss.x, boss.y - 80); if (player.x > 2200) bossHealthText.setText('הדרקון: ' + boss.getData('hp') + '/10'); else bossHealthText.setText(''); }
+            if (currentLevel === 3 && boss && boss.getData('isAlive')) { bossTalk.setPosition(boss.x, boss.y - 80); if (player.x > 2200) bossHealthText.setText('דרקון האש: ' + boss.getData('hp') + '/10'); else bossHealthText.setText(''); }
             else if (currentLevel === 5 && trueBoss && trueBoss.getData('isAlive')) { bossTalk.setPosition(trueBoss.x, trueBoss.y - 80); if (player.x > 2000) bossHealthText.setText('שד הריק: ' + trueBoss.getData('hp') + '/20'); else bossHealthText.setText(''); } 
             else bossHealthText.setText('');
 
@@ -344,12 +343,15 @@
             bTarget.setData('iFrames', true); scene.time.delayedCall(200, () => { if(bTarget && bTarget.active) bTarget.setData('iFrames', false); });
 
             let hp = bTarget.getData('hp') - damage;
-            bTarget.setData('hp', hp); bTarget.setTint(0xFF0000); scene.time.delayedCall(100, () => bTarget.clearTint()); SoundEngine.play('hit');
+            bTarget.setData('hp', hp); bTarget.setTint(0xFFFFFF); scene.time.delayedCall(100, () => bTarget.clearTint()); SoundEngine.play('hit');
+            
+            if (currentLevel === 5 && hp > 0 && Math.random() > 0.5) { bTarget.setAlpha(0.2); scene.time.delayedCall(1500, () => bTarget.setAlpha(1)); } 
             
             if (hp <= 5 && !bTarget.getData('enraged')) bTarget.setData('enraged', true);
+            if (hp <= 2) bTarget.setTint(0xFF5500); // שינוי לאדום/כתום בוהק במקום שחור מלא
             if (hp <= 0) { 
                 bTarget.setData('isAlive', false); explodeParticles(scene, bTarget.x, bTarget.y, 0xFF0000, 50); bTarget.destroy(); 
-                if(currentLevel === 3) { centerText.setText('הבסת את הדרקון! מתקדם...').setVisible(true); scene.time.delayedCall(2000, () => { centerText.setVisible(false); setupLevel(scene, 4); }); }
+                if(currentLevel === 3) { centerText.setText('הבסת את דרקון האש!').setVisible(true); scene.time.delayedCall(2000, () => { centerText.setVisible(false); setupLevel(scene, 4); }); }
                 else { gameActive = false; centerText.setText('ניצחת את המשחק לחלוטין!!!').setVisible(true).setFill('#00FF00'); scene.cameras.main.zoomTo(2, 2000); }
             }
         }
@@ -378,7 +380,8 @@
         }
 
         function startBossAI(scene) {
-            scene.time.addEvent({ delay: 1500, loop: true, callback: () => {
+            // תנועת בוס פחות קופצנית בשלב 3, וחלקה יותר בשלב 5
+            scene.time.addEvent({ delay: 2000, loop: true, callback: () => {
                 if (!gameActive) return;
                 if (currentLevel === 3 && boss && boss.getData('isAlive')) { boss.setVelocityY(boss.getData('enraged') ? -500 : -400); boss.setVelocityX(player.x < boss.x ? -150 : 150); }
                 if (currentLevel === 5 && trueBoss && trueBoss.getData('isAlive')) { trueBoss.setVelocityY(-300); trueBoss.setVelocityX(player.x < trueBoss.x ? -100 : 100); }
@@ -391,6 +394,7 @@
                     let hfb = homingFireballs.create(trueBoss.x, trueBoss.y, 'blueFireTex'); hfb.body.allowGravity = false; 
                 }
             }});
+            // גייזרים בשלב 3 - מופחת! רק כל 8 שניות (במקום 4)
             scene.time.addEvent({ delay: 8000, loop: true, callback: () => {
                 if (!gameActive || !boss || !boss.getData('isAlive') || currentLevel !== 3) return;
                 let fb = fireballs.create(player.x + Phaser.Math.Between(-100, 100), 550, 'powerTex').setTint(0xFF4500); fb.body.allowGravity = true; fb.setVelocityY(-600);
