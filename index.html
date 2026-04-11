@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Platformer Ultimate - FIXED ABYSS</title>
+    <title>Platformer Ultimate - THE FOG & CHAOS</title>
     <link rel="shortcut icon" href="data:image/x-icon;," type="image/x-icon">
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
     <style>
@@ -35,35 +35,29 @@
         const config = { type: Phaser.AUTO, width: 800, height: 600, parent: 'game-container', physics: { default: 'arcade', arcade: { gravity: { y: 1000 }, debug: false } }, scene: { create: create, update: update } };
         const game = new Phaser.Game(config);
         
-        // הגדרת משתנים בצורה בטוחה ומסודרת
         let player, ground, platforms, iceGround, mysteryBlocks, powerUps, enemies, bats, boss, trueBoss;
         let fireballs, missiles, fallingSpikes, springs, healSprings, iceballs, coinsGroup, goals, lasers, lava, fakeGoal, defuseOrbs;
-        let cursors, keys, restartKey, shootKey, dashKey, coinRainKey, shrinkKey, jetpackKey, meteorKey; // T ו-B הוסרו
+        let portals, fakeCoins, homingFireballs; // קבוצות חדשות להפתעות!
+        
+        let cursors, keys, restartKey, shootKey, dashKey, coinRainKey, shrinkKey, jetpackKey, meteorKey, gravToggleKey, superJumpKey; 
         
         let score = 0, health = 3, bossHealth = 10, currentLevel = 1;
         let gameActive = false, isInvincible = false, currentSpeed = 250, hasIcePower = true;
         let lastShotTime = 0, canDoubleJump = false, canDash = true, usedCoinRain = false;
         let reverseControls = false, isTiny = false, bombActive = false, bombTimer = 0;
-        let trollEventsStarted = false; // הנה המשתנה שתוקן!
+        let trollEventsStarted = false, superJumpActive = false;
         
         let scoreText, healthText, bossHealthText, centerText, levelText, bombText, bossTalk;
-        let pet, bubbleShield, spotlight, spotlightMask;
+        let pet, bubbleShield, fogOverlay; // ערפל לשלב 4!
 
         function createTextures(scene) {
             let g = scene.make.graphics({ x: 0, y: 0, add: false });
-            // Player
             g.fillStyle(0x555555); g.fillRect(4, 0, 24, 8); g.fillStyle(0x777777); g.fillRect(0, 8, 32, 16); g.fillStyle(0x333333); g.fillRect(8, 12, 16, 8); g.fillStyle(0x00FF00); g.fillRect(12, 14, 2, 2); g.fillRect(18, 14, 2, 2); g.fillStyle(0x444444); g.fillRect(4, 24, 8, 8); g.fillRect(20, 24, 8, 8); g.generateTexture('playerTex', 32, 32); g.clear();
-            // Slime
             g.fillStyle(0x800080, 0.9); g.fillCircle(16, 16, 14); g.fillStyle(0xFFFFFF); g.fillCircle(12, 14, 4); g.fillCircle(20, 14, 4); g.fillStyle(0x000000); g.fillCircle(12, 14, 2); g.fillCircle(20, 14, 2); g.generateTexture('enemyTex', 32, 32); g.clear();
-            // Thief Slime
             g.fillStyle(0xFF0000, 0.9); g.fillCircle(16, 16, 14); g.fillStyle(0xFFFFFF); g.fillCircle(12, 14, 4); g.fillCircle(20, 14, 4); g.fillStyle(0x000000); g.fillRect(10, 12, 12, 4); g.generateTexture('thiefTex', 32, 32); g.clear();
-            // Bat
             g.fillStyle(0x222222); g.fillRect(12, 12, 8, 8); g.fillStyle(0x444444); g.moveTo(12, 12); g.lineTo(0, 4); g.lineTo(12, 16); g.fill(); g.moveTo(20, 12); g.lineTo(32, 4); g.lineTo(20, 16); g.fill(); g.fillStyle(0xFF0000); g.fillRect(14, 14, 1, 1); g.fillRect(17, 14, 1, 1); g.generateTexture('batTex', 32, 32); g.clear();
-            // Boss 1
             g.fillStyle(0x8B0000); g.fillRect(0, 0, 100, 100); g.fillStyle(0xFFFF00); g.fillRect(20, 30, 20, 20); g.fillRect(60, 30, 20, 20); g.generateTexture('bossTex', 100, 100); g.clear();
-            // True Boss
             g.fillStyle(0x111111); g.fillRect(0, 0, 120, 120); g.fillStyle(0x800080); g.fillRect(10, 10, 100, 100); g.fillStyle(0x00FFFF); g.fillRect(30, 40, 20, 10); g.fillRect(70, 40, 20, 10); g.generateTexture('trueBossTex', 120, 120); g.clear();
-            // Environment
             g.fillStyle(0x8B4513); g.fillRect(0, 0, 400, 40); g.fillStyle(0x228B22); g.fillRect(0, 0, 400, 8); g.generateTexture('groundTex', 400, 40); g.clear();
             g.fillStyle(0x00FFFF, 0.5); g.fillRect(0, 0, 400, 40); g.generateTexture('iceGroundTex', 400, 40); g.clear();
             g.fillStyle(0xDEB887); g.fillRect(0, 0, 150, 20); g.generateTexture('platTex', 150, 20); g.clear();
@@ -83,6 +77,11 @@
             g.fillStyle(0x00FFFF); g.moveTo(8,0); g.lineTo(16,32); g.lineTo(0,32); g.fill(); g.generateTexture('spikeTex', 16, 32); g.clear();
             g.fillStyle(0x00FF00); g.fillCircle(12,12,12); g.generateTexture('defuseTex', 24, 24); g.clear();
             g.fillStyle(0x00FFFF); g.moveTo(8,0); g.lineTo(16,8); g.lineTo(8,16); g.lineTo(0,8); g.fill(); g.generateTexture('diamondTex', 16, 16); g.clear();
+            
+            // טקסטורות להפתעות החדשות
+            g.fillStyle(0x0000FF, 0.5); g.fillCircle(16,16,16); g.lineStyle(2, 0xFFFFFF); g.strokeCircle(16,16,16); g.generateTexture('portalTex', 32, 32); g.clear();
+            g.fillStyle(0xFF0000); g.fillCircle(8,8,8); g.generateTexture('fakeCoinTex', 16, 16); g.clear();
+            g.fillStyle(0x0000FF); g.fillCircle(12,12,12); g.generateTexture('blueFireTex', 24, 24); g.clear();
         }
 
         function explodeParticles(scene, x, y, color, qty = 15) { let emitter = scene.add.particles(x, y, 'particleTex', { speed: { min: -150, max: 150 }, angle: { min: 0, max: 360 }, scale: { start: 1, end: 0 }, tint: color, lifespan: 600, gravityY: 300, quantity: qty, emitting: false }); emitter.explode(); }
@@ -95,46 +94,45 @@
             levelText = this.add.text(400, 16, 'שלב: 1', { fontSize: '24px', fill: '#FFF', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(200);
             bossHealthText = this.add.text(600, 16, '', { fontSize: '24px', fill: '#FF0000', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setScrollFactor(0).setDepth(200);
             bombText = this.add.text(400, 80, '', { fontSize: '40px', fill: '#FF0000', fontStyle: 'bold', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(200).setVisible(false);
-            centerText = this.add.text(400, 300, 'רווח להתחלה! (X יורה, J ג\'טפאק, Z דאש, S כיווץ, M מטאור, C מטבעות)', { fontSize: '22px', fill: '#FFF', fontStyle: 'bold', align:'center', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5).setScrollFactor(0).setDepth(200);
+            centerText = this.add.text(400, 300, 'רווח להתחלה! (Z,X,C,S,M,J,G,U)', { fontSize: '24px', fill: '#FFF', fontStyle: 'bold', align:'center', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5).setScrollFactor(0).setDepth(200);
             bossTalk = this.add.text(0, 0, '', { fontSize: '18px', fill: '#000', backgroundColor: '#FFF', padding: 5 }).setOrigin(0.5).setVisible(false).setDepth(25);
 
             cursors = this.input.keyboard.createCursorKeys(); keys = this.input.keyboard.addKeys('W,A,D,SPACE');
-            restartKey = this.input.keyboard.addKey('R'); 
-            shootKey = this.input.keyboard.addKey('X'); 
-            dashKey = this.input.keyboard.addKey('Z'); 
-            coinRainKey = this.input.keyboard.addKey('C'); 
-            shrinkKey = this.input.keyboard.addKey('S'); 
-            jetpackKey = this.input.keyboard.addKey('J'); 
-            meteorKey = this.input.keyboard.addKey('M');
+            restartKey = this.input.keyboard.addKey('R'); shootKey = this.input.keyboard.addKey('X'); dashKey = this.input.keyboard.addKey('Z'); coinRainKey = this.input.keyboard.addKey('C'); 
+            shrinkKey = this.input.keyboard.addKey('S'); jetpackKey = this.input.keyboard.addKey('J'); meteorKey = this.input.keyboard.addKey('M'); 
+            gravToggleKey = this.input.keyboard.addKey('G'); superJumpKey = this.input.keyboard.addKey('U'); // מקשים חדשים!
 
-            this.input.keyboard.on('keydown-SPACE', () => { if (!gameActive && centerText.visible) { gameActive = true; centerText.setVisible(false); SoundEngine.init(); if(currentLevel === 3 || currentLevel === 5) startBossAI(this); } });
+            this.input.keyboard.on('keydown-SPACE', () => { if (!gameActive && centerText.visible && !centerText.text.includes('ניצחון')) { gameActive = true; centerText.setVisible(false); SoundEngine.init(); if(currentLevel === 3 || currentLevel === 5) startBossAI(this); } });
             this.input.keyboard.on('keydown-R', () => { window.location.reload(); });
-
-            spotlight = this.make.graphics(); spotlight.fillCircle(0, 0, 150);
-            spotlightMask = new Phaser.Display.Masks.GeometryMask(this, spotlight);
 
             setupLevel(this, 1);
         }
 
         function setupLevel(scene, level) {
-            currentLevel = level; scene.physics.world.timeScale = 1; reverseControls = false; gravityFlipped = false; isTiny = false; bombActive = false; bombText.setVisible(false);
+            currentLevel = level; scene.physics.world.timeScale = 1; reverseControls = false; gravityFlipped = false; isTiny = false; bombActive = false; bombText.setVisible(false); superJumpActive = false;
             if(levelText) levelText.setText('שלב: ' + level);
 
-            let groups = [ground, platforms, iceGround, mysteryBlocks, enemies, bats, goals, springs, healSprings, lasers, lava, fireballs, missiles, fallingSpikes, iceballs, coinsGroup, powerUps, defuseOrbs];
+            let groups = [ground, platforms, iceGround, mysteryBlocks, enemies, bats, goals, springs, healSprings, lasers, lava, fireballs, missiles, fallingSpikes, iceballs, coinsGroup, powerUps, defuseOrbs, portals, fakeCoins, homingFireballs];
             groups.forEach(g => { if(g) g.clear(true, true); });
+            if(fogOverlay) { fogOverlay.destroy(); fogOverlay = null; }
 
             ground = scene.physics.add.staticGroup(); platforms = scene.physics.add.staticGroup(); iceGround = scene.physics.add.staticGroup(); mysteryBlocks = scene.physics.add.staticGroup();
             goals = scene.physics.add.staticGroup(); springs = scene.physics.add.staticGroup(); healSprings = scene.physics.add.staticGroup(); lasers = scene.physics.add.staticGroup(); lava = scene.physics.add.staticGroup();
             enemies = scene.physics.add.group(); bats = scene.physics.add.group({allowGravity: false}); fireballs = scene.physics.add.group({allowGravity: false}); missiles = scene.physics.add.group({allowGravity: false}); fallingSpikes = scene.physics.add.group(); iceballs = scene.physics.add.group({allowGravity: false}); coinsGroup = scene.physics.add.group();
             powerUps = scene.physics.add.group(); defuseOrbs = scene.physics.add.staticGroup();
+            portals = scene.physics.add.staticGroup(); fakeCoins = scene.physics.add.staticGroup(); homingFireballs = scene.physics.add.group({allowGravity: false});
 
             scene.physics.world.setBounds(0, 0, 3200, 600); scene.cameras.main.setBounds(0, 0, 3200, 600);
-            scene.cameras.main.clearMask();
+            scene.physics.world.gravity.y = 1000;
 
             if (level === 1) { scene.cameras.main.setBackgroundColor('#4CA1AF'); for (let x = 0; x < 3200; x += 400) ground.create(x + 200, 580, 'groundTex'); } 
             else if (level === 2) { scene.cameras.main.setBackgroundColor('#483D8B'); for (let x = 0; x < 3200; x += 400) { if(x === 1200 || x === 2000) iceGround.create(x + 200, 580, 'iceGroundTex'); else ground.create(x + 200, 580, 'groundTex'); } } 
             else if (level === 3) { scene.cameras.main.setBackgroundColor('#8B0000'); for (let x = 0; x < 800; x += 400) ground.create(x + 200, 580, 'groundTex'); for (let x = 800; x < 3200; x += 800) lava.create(x, 590, 'lavaTex'); }
-            else if (level === 4) { scene.cameras.main.setBackgroundColor('#000000'); scene.cameras.main.setMask(spotlightMask); for (let x = 0; x < 3200; x += 400) ground.create(x + 200, 580, 'groundTex'); } 
+            else if (level === 4) { 
+                scene.cameras.main.setBackgroundColor('#333333'); 
+                fogOverlay = scene.add.rectangle(400, 300, 800, 600, 0x555555, 0.85).setScrollFactor(0).setDepth(190); // הערפל החדש!
+                for (let x = 0; x < 3200; x += 400) ground.create(x + 200, 580, 'groundTex'); 
+            } 
             else if (level === 5) { scene.cameras.main.setBackgroundColor('#110022'); for (let x = 0; x < 3200; x += 800) lava.create(x, 590, 'lavaTex'); ground.create(200, 580, 'groundTex'); }
 
             if (level < 5) goals.create(3100, 520, 'goalTex');
@@ -157,6 +155,7 @@
                 [1900, 2500].forEach(x => enemies.create(x, 500, 'thiefTex').setVelocityX(200).setBounceX(1).setCollideWorldBounds(true)); 
                 mysteryBlocks.create(1000, 250, 'blockTex').setData('used', false); mysteryBlocks.create(1200, 250, 'mimicTex').setData('mimic', true); 
                 healSprings.create(2500, 550, 'healSpringTex');
+                let p1 = portals.create(400, 300, 'portalTex'); let p2 = portals.create(1800, 200, 'portalTex'); p1.setData('target', p2); p2.setData('target', p1); // פורטלים
             } else if (level === 3) {
                 boss = scene.physics.add.sprite(2900, 400, 'bossTex').setBounce(0.2).setCollideWorldBounds(true).setData('isAlive', true).setData('hp', 10); scene.physics.add.collider(boss, ground);
                 if(gameActive) startBossAI(scene);
@@ -164,6 +163,9 @@
                 [500, 1000, 1500, 2000, 2500].forEach((x, i) => { let p = platforms.create(x, 400, 'platTex'); p.body.checkCollision.down = false; });
                 [800, 1600, 2400].forEach(x => bats.create(x, 100, 'batTex')); 
                 mysteryBlocks.create(1200, 250, 'blockTex').setData('used', false);
+                let giant = enemies.create(2000, 400, 'enemyTex').setScale(2).setVelocityX(80).setBounceX(1).setCollideWorldBounds(true); giant.setData('hp', 3); giant.setData('isGiant', true); // סליים ענק
+                fakeCoins.create(1400, 350, 'fakeCoinTex'); fakeCoins.create(2200, 350, 'fakeCoinTex'); // מטבעות מזויפים
+                let p3 = portals.create(300, 200, 'portalTex'); let p4 = portals.create(2600, 200, 'portalTex'); p3.setData('target', p4); p4.setData('target', p3);
             } else if (level === 5) {
                 [600, 1200, 1800, 2400].forEach((x) => { let p = platforms.create(x, 400, 'platTex'); p.body.checkCollision.down = false; });
                 trueBoss = scene.physics.add.sprite(2900, 200, 'trueBossTex').setCollideWorldBounds(true).setData('isAlive', true).setData('hp', 20);
@@ -184,17 +186,20 @@
             
             if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal, (p, f) => { explodeParticles(scene, f.x, f.y, 0xFF0000, 30); f.destroy(); SoundEngine.play('hit'); for(let i=0; i<3; i++) enemies.create(f.x + (i*30 - 30), f.y - 50, 'enemyTex').setVelocityX(150).setBounceX(1).setCollideWorldBounds(true); }); }
 
+            // פורטלים
+            scene.physics.add.overlap(player, portals, (p, portal) => {
+                if(!p.getData('teleporting')) { p.setData('teleporting', true); SoundEngine.play('jump'); let target = portal.getData('target'); p.x = target.x; p.y = target.y; scene.time.delayedCall(1000, () => p.setData('teleporting', false)); }
+            });
+
+            // מטבעות מזויפים
+            scene.physics.add.overlap(player, fakeCoins, (p, fc) => { fc.destroy(); SoundEngine.play('hit'); bats.create(p.x, p.y - 50, 'batTex'); });
+
             scene.physics.add.collider(player, mysteryBlocks, (p, b) => {
                 if (p.body.touching.up && b.body.touching.down && !b.getData('used')) {
                     if(b.texture.key === 'mimicTex') { b.destroy(); takeDamage(scene); explodeParticles(scene, b.x, b.y, 0xFF0000, 20); return; }
                     b.setData('used', true); b.setTint(0x555555); SoundEngine.play('coin'); scene.tweens.add({ targets: b, y: b.y - 10, duration: 50, yoyo: true });
-                    
-                    if(Math.random() < 0.2) {
-                        let d = coinsGroup.create(b.x, b.y - 30, 'diamondTex').setVelocityY(-300); d.setData('diamond', true);
-                    } else {
-                        let pwrTypes = [{t:'health', c:0xFF0000}, {t:'star', c:0xFFFF00}, {t:'speed', c:0x00FFFF}, {t:'poison', c:0x800080}];
-                        let pwr = powerUps.create(b.x, b.y - 30, 'powerTex').setTint(pwrTypes[Phaser.Math.Between(0, 3)].c).setVelocityY(-200); pwr.setData('type', pwrTypes[Phaser.Math.Between(0, 3)].t);
-                    }
+                    if(Math.random() < 0.2) { let d = coinsGroup.create(b.x, b.y - 30, 'diamondTex').setVelocityY(-300); d.setData('diamond', true); } 
+                    else { let pwrTypes = [{t:'health', c:0xFF0000}, {t:'star', c:0xFFFF00}, {t:'speed', c:0x00FFFF}, {t:'poison', c:0x800080}]; let pwr = powerUps.create(b.x, b.y - 30, 'powerTex').setTint(pwrTypes[Phaser.Math.Between(0, 3)].c).setVelocityY(-200); pwr.setData('type', pwrTypes[Phaser.Math.Between(0, 3)].t); }
                 }
             });
 
@@ -205,49 +210,59 @@
             });
 
             scene.physics.add.collider(iceballs, [ground, platforms], (i) => i.destroy());
-            scene.physics.add.collider(iceballs, enemies, (i, e) => { e.destroy(); i.destroy(); score+=30; scoreText.setText('ניקוד: ' + score); SoundEngine.play('hit'); explodeParticles(scene, e.x, e.y, 0x00FFFF, 10); });
+            scene.physics.add.collider(iceballs, enemies, (i, e) => {
+                i.destroy(); SoundEngine.play('hit');
+                if(e.getData('isGiant')) {
+                    e.setData('hp', e.getData('hp') - 1); e.setTint(0x00FFFF); scene.time.delayedCall(100, () => e.clearTint());
+                    if(e.getData('hp') <= 0) { e.destroy(); score+=50; scoreText.setText('ניקוד: ' + score); explodeParticles(scene, e.x, e.y, 0xFFFFFF, 30); }
+                } else { e.destroy(); score+=30; scoreText.setText('ניקוד: ' + score); explodeParticles(scene, e.x, e.y, Math.random()*0xFFFFFF, 20); }
+            });
             scene.physics.add.collider(iceballs, bats, (i, b) => { b.destroy(); i.destroy(); score+=40; SoundEngine.play('hit'); explodeParticles(scene, b.x, b.y, 0x00FFFF, 10); });
             
             scene.physics.add.collider(player, enemies, (p, e) => {
-                if (p.body.touching.down && e.body.touching.up && p.body.velocity.y > 0) { e.destroy(); p.setVelocityY(isTiny ? -250 : -350); score+=20; scoreText.setText('ניקוד: ' + score); SoundEngine.play('jump'); } 
+                if ((!gravityFlipped && p.body.touching.down && e.body.touching.up && p.body.velocity.y > 0) || (gravityFlipped && p.body.touching.up && e.body.touching.down && p.body.velocity.y < 0)) { 
+                    p.setVelocityY(gravityFlipped ? (superJumpActive ? 900 : 600) : (isTiny ? -250 : (superJumpActive ? -600 : -350)));
+                    if(e.getData('isGiant')) { e.setData('hp', e.getData('hp') - 1); e.setTint(0xFF0000); scene.time.delayedCall(100, () => e.clearTint()); SoundEngine.play('hit'); if(e.getData('hp') <= 0) { e.destroy(); score+=50; scoreText.setText('ניקוד: ' + score); explodeParticles(scene, e.x, e.y, 0xFFFFFF, 30); } }
+                    else { e.destroy(); score+=20; scoreText.setText('ניקוד: ' + score); SoundEngine.play('jump'); explodeParticles(scene, e.x, e.y, Math.random()*0xFFFFFF, 20); } // פיצוץ קשת בענן
+                } 
                 else { takeDamage(scene); if(e.texture.key === 'thiefTex') { score = Math.max(0, score - 50); scoreText.setText('ניקוד: ' + score); } } 
             });
             scene.physics.add.overlap(player, bats, (p, b) => { takeDamage(scene); b.destroy(); });
             scene.physics.add.overlap(player, missiles, (p, m) => { takeDamage(scene); explodeParticles(scene, m.x, m.y, 0xFF0000, 20); m.destroy(); });
+            scene.physics.add.overlap(player, homingFireballs, (p, h) => { takeDamage(scene); explodeParticles(scene, h.x, h.y, 0x0000FF, 20); h.destroy(); });
             scene.physics.add.overlap(player, fallingSpikes, (p, s) => { takeDamage(scene); s.destroy(); });
             scene.physics.add.overlap(player, lasers, () => takeDamage(scene));
-
             scene.physics.add.overlap(player, defuseOrbs, (p, orb) => { orb.destroy(); bombActive = false; bombText.setVisible(false); SoundEngine.play('coin'); explodeParticles(scene, p.x, p.y, 0x00FF00, 20); });
 
             if(currentLevel === 3 && boss) {
                 scene.physics.add.overlap(player, lava, () => { health = 0; takeDamage(scene); });
                 scene.physics.add.overlap(player, fireballs, (p, f) => { f.destroy(); takeDamage(scene); });
                 scene.physics.add.collider(iceballs, boss, (i, b) => { i.destroy(); hitBoss(scene, boss, 1); });
-                scene.physics.add.collider(player, boss, (p, b) => { if (p.body.touching.down && b.body.touching.up && p.body.velocity.y > 0) { p.setVelocityY(-400); hitBoss(scene, boss, 4); } else { takeDamage(scene); } });
+                scene.physics.add.collider(player, boss, (p, b) => { if ((!gravityFlipped && p.body.touching.down && b.body.touching.up) || (gravityFlipped && p.body.touching.up && b.body.touching.down)) { p.setVelocityY(gravityFlipped ? 600 : -400); hitBoss(scene, boss, 4); } else { takeDamage(scene); } });
             }
             if(currentLevel === 5 && trueBoss) {
                 scene.physics.add.overlap(player, lava, () => { p.setVelocityY(-800); takeDamage(scene); }); 
                 scene.physics.add.collider(iceballs, trueBoss, (i, b) => { i.destroy(); hitBoss(scene, trueBoss, 1); });
-                scene.physics.add.collider(player, trueBoss, (p, b) => { if (p.body.touching.down && b.body.touching.up && p.body.velocity.y > 0) { p.setVelocityY(-400); hitBoss(scene, trueBoss, 4); } else { takeDamage(scene); } });
+                scene.physics.add.collider(player, trueBoss, (p, b) => { if ((!gravityFlipped && p.body.touching.down && b.body.touching.up) || (gravityFlipped && p.body.touching.up && b.body.touching.down)) { p.setVelocityY(gravityFlipped ? 600 : -400); hitBoss(scene, trueBoss, 4); } else { takeDamage(scene); } });
                 scene.physics.add.overlap(player, fireballs, (p, f) => { f.destroy(); takeDamage(scene); });
             }
 
-            scene.physics.add.collider(player, springs, (p, s) => { p.setVelocityY(-1100); SoundEngine.play('coin'); });
-            scene.physics.add.collider(player, healSprings, (p, s) => { p.setVelocityY(-900); if(health < 5) health++; healthText.setText('חיים: ' + health); SoundEngine.play('coin'); });
+            scene.physics.add.collider(player, springs, (p, s) => { p.setVelocityY(gravityFlipped ? 1100 : -1100); SoundEngine.play('coin'); });
+            scene.physics.add.collider(player, healSprings, (p, s) => { p.setVelocityY(gravityFlipped ? 900 : -900); if(health < 5) health++; healthText.setText('חיים: ' + health); SoundEngine.play('coin'); });
             scene.physics.add.overlap(player, coinsGroup, (p, c) => { let val = c.getData('diamond') ? 100 : 10; c.destroy(); score += val; scoreText.setText('ניקוד: ' + score); SoundEngine.play('coin'); });
         }
 
         function update(time) {
             if (!gameActive) return;
 
-            if (Math.abs(player.body.velocity.x) > 10 && Math.random() > 0.5) { let ghost = this.add.image(player.x, player.y, player.texture.key); ghost.setTint(0x00FFFF); ghost.setAlpha(0.5); ghost.flipX = player.flipX; this.tweens.add({ targets: ghost, alpha: 0, duration: 400, onComplete: () => ghost.destroy() }); }
+            if (Math.abs(player.body.velocity.x) > 10 && Math.random() > 0.5) { let ghost = this.add.image(player.x, player.y, player.texture.key); ghost.setTint(hasIcePower ? 0x00FFFF : 0x00FF00); ghost.setAlpha(0.5); ghost.flipX = player.flipX; this.tweens.add({ targets: ghost, alpha: 0, duration: 400, onComplete: () => ghost.destroy() }); }
 
             if(pet) { pet.x += (player.x - 30 - pet.x) * 0.05; pet.y += (player.y - 30 - pet.y) * 0.05; }
-            if(currentLevel === 4 && spotlight) { spotlight.x = player.x; spotlight.y = player.y; } 
             if(currentLevel === 2) { player.body.velocity.x -= 2; } 
 
             bats.getChildren().forEach(b => { if(Phaser.Math.Distance.Between(b.x, b.y, player.x, player.y) < 400) this.physics.moveToObject(b, player, 150); });
             missiles.getChildren().forEach(m => { this.physics.moveToObject(m, player, 200); m.rotation = Phaser.Math.Angle.Between(m.x, m.y, player.x, player.y); });
+            homingFireballs.getChildren().forEach(hf => { this.physics.moveToObject(hf, player, 180); });
 
             let v = currentSpeed;
             if (reverseControls) {
@@ -256,13 +271,20 @@
                 if(cursors.left.isDown || keys.A.isDown) { player.setVelocityX(-v); player.flipX = true; } else if(cursors.right.isDown || keys.D.isDown) { player.setVelocityX(v); player.flipX = false; } else player.setVelocityX(0);
             }
 
-            if (player.body.touching.down) { canDoubleJump = true; }
+            let isTouchingGround = gravityFlipped ? player.body.touching.up : player.body.touching.down;
+            if (isTouchingGround) { canDoubleJump = true; }
+            
             if (Phaser.Input.Keyboard.JustDown(cursors.up) || Phaser.Input.Keyboard.JustDown(keys.W) || Phaser.Input.Keyboard.JustDown(cursors.space)) {
-                if (player.body.touching.down) { player.setVelocityY(isTiny ? -400 : -600); SoundEngine.play('jump'); } else if (canDoubleJump) { player.setVelocityY(isTiny ? -350 : -500); canDoubleJump = false; SoundEngine.play('jump'); }
+                let jv = isTiny ? 400 : (superJumpActive ? 900 : 600);
+                if (isTouchingGround) { player.setVelocityY(gravityFlipped ? jv : -jv); SoundEngine.play('jump'); } 
+                else if (canDoubleJump) { player.setVelocityY(gravityFlipped ? (jv-100) : -(jv-100)); canDoubleJump = false; SoundEngine.play('jump'); }
             }
 
+            // מקשים מיוחדים
+            if (Phaser.Input.Keyboard.JustDown(gravToggleKey) && score >= 50) { score -= 50; scoreText.setText('ניקוד: ' + score); SoundEngine.play('coin'); flipGravity(this, 3000); }
+            if (Phaser.Input.Keyboard.JustDown(superJumpKey)) { superJumpActive = true; SoundEngine.play('coin'); this.time.delayedCall(5000, () => superJumpActive = false); }
             if (Phaser.Input.Keyboard.JustDown(shrinkKey)) { isTiny = !isTiny; player.setScale(isTiny ? 0.5 : 1); SoundEngine.play('coin'); }
-            if (jetpackKey.isDown) { player.setVelocityY(-300); explodeParticles(this, player.x, player.y+15, 0xFFA500, 2); }
+            if (jetpackKey.isDown) { player.setVelocityY(gravityFlipped ? 300 : -300); explodeParticles(this, player.x, player.y+(gravityFlipped?-15:15), 0xFFA500, 2); }
             if (Phaser.Input.Keyboard.JustDown(meteorKey)) { let m = fireballs.create(player.x + (player.flipX ? -300 : 300), 0, 'powerTex').setTint(0xFF0000); m.body.allowGravity = true; m.setVelocityY(500); SoundEngine.play('shoot'); }
             if (Phaser.Input.Keyboard.JustDown(shootKey) && time > lastShotTime + 500) { lastShotTime = time; SoundEngine.play('shoot'); let ice = iceballs.create(player.x, player.y, 'iceTex'); ice.setVelocityX(player.flipX ? -500 : 500); ice.body.allowGravity = false; }
             if (Phaser.Input.Keyboard.JustDown(dashKey) && canDash) { canDash = false; player.setVelocityX(player.flipX ? -1000 : 1000); SoundEngine.play('shoot'); this.time.delayedCall(1000, () => canDash = true); }
@@ -275,7 +297,7 @@
             else if (currentLevel === 5 && trueBoss && trueBoss.getData('isAlive') && player.x > 2000) bossHealthText.setText('שד הריק: ' + trueBoss.getData('hp') + '/20'); 
             else bossHealthText.setText('');
 
-            if (player.y > 600 && currentLevel !== 3 && currentLevel !== 5) { takeDamage(this); player.x = 100; player.y = 100; player.setVelocity(0); }
+            if (player.y > 600 || player.y < -100) { if(currentLevel !== 3 && currentLevel !== 5) { takeDamage(this); player.x = 100; player.y = 100; player.setVelocity(0); } }
         }
 
         function hitBoss(scene, bTarget, damage) {
@@ -284,19 +306,29 @@
             bTarget.setData('hp', hp); bTarget.setTint(0xFFFFFF); scene.time.delayedCall(100, () => bTarget.clearTint()); SoundEngine.play('hit');
             
             if(hp <= 4 && Math.random() > 0.5) { bTarget.x = player.x + (player.flipX ? -200 : 200); bTarget.y = player.y - 100; explodeParticles(scene, bTarget.x, bTarget.y, 0x800080, 20); }
+            if (currentLevel === 5 && hp > 0) { bTarget.setAlpha(0.2); scene.time.delayedCall(2000, () => bTarget.setAlpha(1)); } // הבוס בלתי נראה
             
             if (hp <= 5 && !bTarget.getData('enraged')) bTarget.setData('enraged', true);
             if (hp <= 2) bTarget.setTint(0x000000);
             if (hp <= 0) { 
                 bTarget.setData('isAlive', false); explodeParticles(scene, bTarget.x, bTarget.y, 0xFF0000, 50); bTarget.destroy(); 
                 if(currentLevel === 3) { centerText.setText('הבסת את הבוס! מתקדם...').setVisible(true); scene.time.delayedCall(2000, () => { centerText.setVisible(false); setupLevel(scene, 4); }); }
-                else { gameActive = false; centerText.setText('ניצחת את שד הריק!!!').setVisible(true).setFill('#00FF00'); scene.cameras.main.zoomTo(2, 2000); }
+                else { gameActive = false; centerText.setText('ניצחת את המשחק לחלוטין!!!').setVisible(true).setFill('#00FF00'); scene.cameras.main.zoomTo(2, 2000); }
             }
+        }
+
+        function flipGravity(scene, duration) {
+            if(!gameActive || gravityFlipped) return;
+            gravityFlipped = true; scene.physics.world.gravity.y = -1000; player.setTint(0x800080); centerText.setText('כוח משיכה הפוך!').setVisible(true).setFill('#800080');
+            scene.time.delayedCall(duration, () => { gravityFlipped = false; scene.physics.world.gravity.y = 1000; player.clearTint(); if(gameActive) centerText.setVisible(false); });
         }
 
         function takeDamage(scene) {
             if (isInvincible || !gameActive) return;
             health--; healthText.setText('חיים: ' + health); SoundEngine.play('hit'); scene.cameras.main.shake(150, 0.01);
+            score = Math.max(0, score - 30); scoreText.setText('ניקוד: ' + score); // מאבד כסף בפגיעה
+            for(let i=0; i<3; i++) { let c = coinsGroup.create(player.x, player.y, 'coinTex'); c.setVelocity(Phaser.Math.Between(-200,200), -200); c.setBounce(0.5); c.setCollideWorldBounds(true); }
+            
             isInvincible = true; player.setTint(0xFF0000);
             scene.time.delayedCall(200, () => player.clearTint()); scene.time.delayedCall(400, () => player.setTint(0xFF0000));
             scene.time.delayedCall(1000, () => { isInvincible = false; player.clearTint(); });
@@ -314,7 +346,7 @@
                 if (currentLevel === 3 && boss && boss.getData('isAlive') && player.x > 2000) { let fb = fireballs.create(boss.x, boss.y, 'coinTex').setTint(0xFFA500).setScale(1.5); fb.body.allowGravity = false; scene.physics.moveToObject(fb, player, 350); }
                 if (currentLevel === 5 && trueBoss && trueBoss.getData('isAlive') && player.x > 2000) { 
                     let ms = missiles.create(trueBoss.x, trueBoss.y, 'missileTex'); 
-                    let lz = lasers.create(trueBoss.x, trueBoss.y, 'laserTex'); lz.setAngle(90); scene.time.delayedCall(500, () => lz.destroy()); 
+                    let hfb = homingFireballs.create(trueBoss.x, trueBoss.y, 'blueFireTex'); hfb.body.allowGravity = false; // כדורי אש עוקבים
                 }
             }});
             scene.time.addEvent({ delay: 4000, loop: true, callback: () => {
@@ -324,9 +356,13 @@
         }
 
         function startTrollEvents(scene) {
+            scene.time.addEvent({ delay: 45000, loop: true, callback: () => {
+                if(!gameActive) return; scene.cameras.main.rotation = Math.PI; centerText.setText('מצלמה הפוכה!').setVisible(true).setFill('#FF00FF');
+                scene.time.delayedCall(3000, () => { scene.cameras.main.rotation = 0; if(gameActive) centerText.setVisible(false); });
+            }});
             scene.time.addEvent({ delay: 20000, loop: true, callback: () => {
                 if(!gameActive) return; scene.cameras.main.shake(1000, 0.02); reverseControls = true; centerText.setText('רעידת אדמה!').setVisible(true).setFill('#FF8C00');
-                scene.time.delayedCall(2000, () => { reverseControls = false; if(gameActive) centerText.setVisible(false); });
+                scene.time.delayedCall(2000, () => { reverseControls = false; if(gameActive && !scene.cameras.main.rotation) centerText.setVisible(false); });
             }});
             scene.time.addEvent({ delay: 13000, loop: true, callback: () => {
                 if(!gameActive) return; let spike = fallingSpikes.create(player.x, 0, 'spikeTex'); spike.body.allowGravity = true; spike.setVelocityY(400);
