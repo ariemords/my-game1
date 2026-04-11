@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Platformer Ultimate - THE DRAGON ABYSS</title>
-    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+    <title>Platformer Ultimate - THE MECHANICAL DRAGON</title>
+    <link rel="shortcut icon" href="data:image/x-icon;," type="image/x-icon">
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
     <style>
         body { margin: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; color: white; font-family: Arial, sans-serif; }
@@ -32,7 +32,7 @@
             }
         };
 
-        const config = { type: Phaser.AUTO, width: 800, height: 600, parent: 'game-container', physics: { default: 'arcade', arcade: { gravity: { y: 1000 }, debug: false } }, scene: { preload: preload, create: create, update: update } };
+        const config = { type: Phaser.AUTO, width: 800, height: 600, parent: 'game-container', physics: { default: 'arcade', arcade: { gravity: { y: 1000 }, debug: false } }, scene: { create: create, update: update } };
         const game = new Phaser.Game(config);
         
         let player, ground, platforms, iceGround, mysteryBlocks, powerUps, enemies, bats, boss, trueBoss;
@@ -51,17 +51,34 @@
         let scoreText, healthText, bossHealthText, centerText, levelText, bombText, bossTalk;
         let pet, bubbleShield, fogOverlay;
 
-        function preload() {
-            // טעינת הדרקון האמיתי! (חייב קובץ dragon.png בתיקייה ו-Live Server)
-            this.load.image('realDragon', 'dragon.png');
-        }
-
         function createTextures(scene) {
             let g = scene.make.graphics({ x: 0, y: 0, add: false });
             g.fillStyle(0x555555); g.fillRect(4, 0, 24, 8); g.fillStyle(0x777777); g.fillRect(0, 8, 32, 16); g.fillStyle(0x333333); g.fillRect(8, 12, 16, 8); g.fillStyle(0x00FF00); g.fillRect(12, 14, 2, 2); g.fillRect(18, 14, 2, 2); g.fillStyle(0x444444); g.fillRect(4, 24, 8, 8); g.fillRect(20, 24, 8, 8); g.generateTexture('playerTex', 32, 32); g.clear();
             g.fillStyle(0x800080, 0.9); g.fillCircle(16, 16, 14); g.fillStyle(0xFFFFFF); g.fillCircle(12, 14, 4); g.fillCircle(20, 14, 4); g.fillStyle(0x000000); g.fillCircle(12, 14, 2); g.fillCircle(20, 14, 2); g.generateTexture('enemyTex', 32, 32); g.clear();
             g.fillStyle(0xFF0000, 0.9); g.fillCircle(16, 16, 14); g.fillStyle(0xFFFFFF); g.fillCircle(12, 14, 4); g.fillCircle(20, 14, 4); g.fillStyle(0x000000); g.fillRect(10, 12, 12, 4); g.generateTexture('thiefTex', 32, 32); g.clear();
             g.fillStyle(0x222222); g.fillRect(12, 12, 8, 8); g.fillStyle(0x444444); g.moveTo(12, 12); g.lineTo(0, 4); g.lineTo(12, 16); g.fill(); g.moveTo(20, 12); g.lineTo(32, 4); g.lineTo(20, 16); g.fill(); g.fillStyle(0xFF0000); g.fillRect(14, 14, 1, 1); g.fillRect(17, 14, 1, 1); g.generateTexture('batTex', 32, 32); g.clear();
+            
+            // 🐉 הנה זה! הדרקון המכני מהתמונה שלך - מקודד פיקסל אחר פיקסל כדי שלא ייעלם בחיים:
+            g.fillStyle(0xAAAAAA); // אפור בהיר לכנפיים
+            g.fillTriangle(60, 40, 20, -20, 140, -10); // כנף שמאל
+            g.fillTriangle(80, 40, 50, -30, 160, -5); // כנף ימין
+            g.fillStyle(0x777777); // אפור כהה לגוף
+            g.fillRect(40, 40, 60, 30); // גוף מרכזי
+            g.fillStyle(0x999999); // אפור פלדה
+            g.fillRect(10, 20, 40, 25); // צוואר וראש
+            g.fillStyle(0x444444);
+            g.fillRect(0, 30, 25, 10); // לסת קדמית
+            g.fillStyle(0xFF0000); 
+            g.fillRect(25, 25, 6, 6); // עין אדומה בוהקת
+            g.fillStyle(0xAAAAAA); 
+            g.fillTriangle(100, 60, 160, 30, 160, 80); // זנב ארוך
+            g.fillStyle(0xFFFFFF); // קוצים של מתכת
+            g.fillTriangle(20, 20, 25, 5, 30, 20); // קוץ ראש
+            g.fillTriangle(50, 40, 55, 25, 60, 40); // קוץ גב 1
+            g.fillTriangle(70, 40, 75, 25, 80, 40); // קוץ גב 2
+            g.fillTriangle(140, 55, 155, 45, 145, 65); // קוץ זנב
+            g.generateTexture('realDragon', 170, 100); g.clear(); // קובץ השמע שלנו שמור לנצח!
+
             g.fillStyle(0x8B4513); g.fillRect(0, 0, 400, 40); g.fillStyle(0x228B22); g.fillRect(0, 0, 400, 8); g.generateTexture('groundTex', 400, 40); g.clear();
             g.fillStyle(0x00FFFF, 0.5); g.fillRect(0, 0, 400, 40); g.generateTexture('iceGroundTex', 400, 40); g.clear();
             g.fillStyle(0xDEB887); g.fillRect(0, 0, 150, 20); g.generateTexture('platTex', 150, 20); g.clear();
@@ -84,6 +101,7 @@
             g.fillStyle(0x0000FF, 0.5); g.fillCircle(16,16,16); g.lineStyle(2, 0xFFFFFF); g.strokeCircle(16,16,16); g.generateTexture('portalTex', 32, 32); g.clear();
             g.fillStyle(0xFF0000); g.fillCircle(8,8,8); g.generateTexture('fakeCoinTex', 16, 16); g.clear();
             g.fillStyle(0x0000FF); g.fillCircle(12,12,12); g.generateTexture('blueFireTex', 24, 24); g.clear();
+            
             g.fillStyle(0x222222, 0.9); g.fillCircle(16,16,16); g.fillStyle(0xFF0000); g.fillCircle(10,14,4); g.fillCircle(22,14,4); g.generateTexture('ghostTex', 32, 32); g.clear();
             g.fillStyle(0x00FF00); g.fillCircle(4,4,4); g.generateTexture('poisonDropTex', 8, 8); g.clear();
             g.fillStyle(0xFF0000); g.fillRect(0, 0, 32, 16); g.generateTexture('badSpringTex', 32, 16); g.clear();
@@ -176,8 +194,9 @@
             } else if (level === 3) {
                 [600, 1200, 1800].forEach(x => { let fp = platforms.create(x, 350, 'platTex'); fp.setTint(0xAAAAAA); fp.body.enable = false; });
                 
+                // הדרקון המכני משובץ פה לשלב 3! (גודל קצת יותר קטן משלב 5)
                 boss = scene.physics.add.sprite(2900, 350, 'realDragon').setBounce(0.2).setCollideWorldBounds(true).setData('isAlive', true).setData('hp', 10);
-                boss.setDisplaySize(150, 150); 
+                boss.setDisplaySize(120, 80); 
                 scene.physics.add.collider(boss, ground);
                 scene.tweens.add({ targets: boss, y: boss.y - 20, duration: 1500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
                 
@@ -192,8 +211,10 @@
             } else if (level === 5) {
                 [600, 1200, 1800, 2400].forEach((x) => { let p = platforms.create(x, 400, 'platTex'); p.body.checkCollision.down = false; });
                 
+                // הדרקון המכני משובץ פה לשלב 5, יותר גדול ואפל!
                 trueBoss = scene.physics.add.sprite(2900, 150, 'realDragon').setCollideWorldBounds(true).setData('isAlive', true).setData('hp', 20);
-                trueBoss.setDisplaySize(200, 200); 
+                trueBoss.setDisplaySize(170, 100); 
+                trueBoss.setTint(0x8888FF); // גוון כחלחל אפל לשלב הסופי
                 trueBoss.body.allowGravity = false; 
                 scene.tweens.add({ targets: trueBoss, y: trueBoss.y - 30, duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
                 
@@ -304,7 +325,7 @@
                 else if (canDoubleJump) { player.setVelocityY(gravityFlipped ? (jv-100) : -(jv-100)); canDoubleJump = false; SoundEngine.play('jump'); }
             }
 
-            // הפעלת הג'טפאק ברווח
+            // ג'טפאק ברווח!
             if (cursors.space.isDown) { 
                 player.setVelocityY(gravityFlipped ? 300 : -300); 
                 explodeParticles(this, player.x, player.y+(gravityFlipped?-15:15), 0xFFA500, 2); 
@@ -382,7 +403,6 @@
                     let hfb = homingFireballs.create(trueBoss.x, trueBoss.y, 'blueFireTex'); hfb.body.allowGravity = false; 
                 }
             }});
-            // גייזרים בשלב 3 - מופחת! רק כל 8 שניות 
             scene.time.addEvent({ delay: 8000, loop: true, callback: () => {
                 if (!gameActive || !boss || !boss.getData('isAlive') || currentLevel !== 3) return;
                 let fb = fireballs.create(player.x + Phaser.Math.Between(-100, 100), 550, 'powerTex').setTint(0xFF4500); fb.body.allowGravity = true; fb.setVelocityY(-600);
