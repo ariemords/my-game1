@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Platformer Ultimate - REAL DRAGON EDITION</title>
-    <link rel="shortcut icon" href="data:image/x-icon;," type="image/x-icon">
+    <title>Platformer Ultimate - THE DRAGON ABYSS</title>
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
     <style>
         body { margin: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; color: white; font-family: Arial, sans-serif; }
@@ -32,7 +32,6 @@
             }
         };
 
-        // הוספנו את פונקציית preload להגדרות!
         const config = { type: Phaser.AUTO, width: 800, height: 600, parent: 'game-container', physics: { default: 'arcade', arcade: { gravity: { y: 1000 }, debug: false } }, scene: { preload: preload, create: create, update: update } };
         const game = new Phaser.Game(config);
         
@@ -52,10 +51,8 @@
         let scoreText, healthText, bossHealthText, centerText, levelText, bombText, bossTalk;
         let pet, bubbleShield, fogOverlay;
 
-        // טעינת תמונות אמיתיות
         function preload() {
-            // כאן אנחנו טוענים את הדרקון האמיתי שלך!
-            // אם יופיע ריבוע ירוק מגעיל, סימן שהשם של הקובץ לא תואם או שאתה לא ב-Live Server
+            // טעינת הדרקון האמיתי! (חייב קובץ dragon.png בתיקייה ו-Live Server)
             this.load.image('realDragon', 'dragon.png');
         }
 
@@ -87,7 +84,6 @@
             g.fillStyle(0x0000FF, 0.5); g.fillCircle(16,16,16); g.lineStyle(2, 0xFFFFFF); g.strokeCircle(16,16,16); g.generateTexture('portalTex', 32, 32); g.clear();
             g.fillStyle(0xFF0000); g.fillCircle(8,8,8); g.generateTexture('fakeCoinTex', 16, 16); g.clear();
             g.fillStyle(0x0000FF); g.fillCircle(12,12,12); g.generateTexture('blueFireTex', 24, 24); g.clear();
-            
             g.fillStyle(0x222222, 0.9); g.fillCircle(16,16,16); g.fillStyle(0xFF0000); g.fillCircle(10,14,4); g.fillCircle(22,14,4); g.generateTexture('ghostTex', 32, 32); g.clear();
             g.fillStyle(0x00FF00); g.fillCircle(4,4,4); g.generateTexture('poisonDropTex', 8, 8); g.clear();
             g.fillStyle(0xFF0000); g.fillRect(0, 0, 32, 16); g.generateTexture('badSpringTex', 32, 16); g.clear();
@@ -180,12 +176,9 @@
             } else if (level === 3) {
                 [600, 1200, 1800].forEach(x => { let fp = platforms.create(x, 350, 'platTex'); fp.setTint(0xAAAAAA); fp.body.enable = false; });
                 
-                // הדרקון האמיתי מוגדר כאן
                 boss = scene.physics.add.sprite(2900, 350, 'realDragon').setBounce(0.2).setCollideWorldBounds(true).setData('isAlive', true).setData('hp', 10);
-                boss.setDisplaySize(150, 150); // מתאים את הגודל של התמונה המקורית כדי שלא תהיה ענקית מדי
+                boss.setDisplaySize(150, 150); 
                 scene.physics.add.collider(boss, ground);
-                
-                // אנימציית ריחוף פשוטה (Tween) כדי לתת לדרקון תחושה חיה
                 scene.tweens.add({ targets: boss, y: boss.y - 20, duration: 1500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
                 
                 if(gameActive) startBossAI(scene);
@@ -199,11 +192,9 @@
             } else if (level === 5) {
                 [600, 1200, 1800, 2400].forEach((x) => { let p = platforms.create(x, 400, 'platTex'); p.body.checkCollision.down = false; });
                 
-                // הדרקון בשלב הסופי גם מוגדר כאן (מרחף גבוה יותר)
                 trueBoss = scene.physics.add.sprite(2900, 150, 'realDragon').setCollideWorldBounds(true).setData('isAlive', true).setData('hp', 20);
-                trueBoss.setDisplaySize(200, 200); // הבוס האחרון קצת יותר גדול
+                trueBoss.setDisplaySize(200, 200); 
                 trueBoss.body.allowGravity = false; 
-                
                 scene.tweens.add({ targets: trueBoss, y: trueBoss.y - 30, duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
                 
                 if(gameActive) startBossAI(scene);
@@ -313,7 +304,7 @@
                 else if (canDoubleJump) { player.setVelocityY(gravityFlipped ? (jv-100) : -(jv-100)); canDoubleJump = false; SoundEngine.play('jump'); }
             }
 
-            // הפעלת הג'טפאק ברווח עובדת!
+            // הפעלת הג'טפאק ברווח
             if (cursors.space.isDown) { 
                 player.setVelocityY(gravityFlipped ? 300 : -300); 
                 explodeParticles(this, player.x, player.y+(gravityFlipped?-15:15), 0xFFA500, 2); 
@@ -391,6 +382,7 @@
                     let hfb = homingFireballs.create(trueBoss.x, trueBoss.y, 'blueFireTex'); hfb.body.allowGravity = false; 
                 }
             }});
+            // גייזרים בשלב 3 - מופחת! רק כל 8 שניות 
             scene.time.addEvent({ delay: 8000, loop: true, callback: () => {
                 if (!gameActive || !boss || !boss.getData('isAlive') || currentLevel !== 3) return;
                 let fb = fireballs.create(player.x + Phaser.Math.Between(-100, 100), 550, 'powerTex').setTint(0xFF4500); fb.body.allowGravity = true; fb.setVelocityY(-600);
