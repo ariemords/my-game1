@@ -98,9 +98,38 @@
             g.fillStyle(0x888888); g.fillCircle(10, 10, 10); g.fillStyle(0x00FFFF); g.fillCircle(10, 10, 4); g.generateTexture('droneTex', 20, 20); g.clear();
             // טקסטורה ליריה של הרחפן
             g.fillStyle(0x00FFFF); g.fillCircle(4, 4, 4); g.generateTexture('plasmaTex', 8, 8); g.clear();
+            // טקסטורה של מכשף להחשכה
+            g.fillStyle(0x3B1F0B); g.fillRect(0, 0, 24, 4); g.fillStyle(0x8B4513); g.fillRect(0, 2, 24, 2); g.fillStyle(0xFFFF00); g.fillRect(22, 1, 4, 2); g.generateTexture('wandTex', 28, 6); g.clear();
+            g.fillStyle(0x5A2F0A); g.fillRect(0, 0, 28, 40); g.fillStyle(0x43200E); g.fillRect(2, 4, 24, 28); g.fillStyle(0xFFFFFF); g.fillCircle(14, 10, 8); g.fillStyle(0x000000); g.fillCircle(11, 9, 2); g.fillCircle(17, 9, 2); g.fillStyle(0xFF6666); g.fillRect(10, 15, 8, 4); g.fillStyle(0x8B0000); g.fillTriangle(4, 32, 14, 44, 24, 32); g.generateTexture('wizardTex', 28, 48); g.clear();
         }
 
         function explodeParticles(scene, x, y, color, qty = 15) { let emitter = scene.add.particles(x, y, 'particleTex', { speed: { min: -150, max: 150 }, angle: { min: 0, max: 360 }, scale: { start: 1, end: 0 }, tint: color, lifespan: 600, gravityY: 300, quantity: qty, emitting: false }); emitter.explode(); }
+
+        function triggerDarknessSequence(scene) {
+            let wizard = scene.add.container(720, 100).setScrollFactor(0).setDepth(310).setAlpha(0);
+            let wizardBody = scene.add.image(0, 0, 'wizardTex').setOrigin(0.5, 0.5);
+            let wizardWand = scene.add.image(14, -3, 'wandTex').setOrigin(0, 0.5);
+            wizard.add([wizardBody, wizardWand]);
+            scene.tweens.add({ targets: wizard, alpha: 1, duration: 200 });
+            scene.time.delayedCall(100, () => {
+                scene.tweens.add({
+                    targets: wizardWand,
+                    props: { angle: { value: 20, duration: 200, ease: 'Sine.easeInOut' }, x: { value: 24, duration: 200, ease: 'Sine.easeInOut' } },
+                    yoyo: true,
+                    repeat: 3
+                });
+            });
+            for (let i = 0; i < 3; i++) {
+                scene.time.delayedCall(400 + i * 250, () => {
+                    let flash = scene.add.rectangle(400, 300, 800, 600, 0xFFFFFF, 0.9).setScrollFactor(0).setDepth(320);
+                    scene.time.delayedCall(90, () => flash.destroy());
+                });
+            }
+            scene.time.delayedCall(1400, () => {
+                let blind = scene.add.rectangle(400, 300, 800, 600, 0x000000, 1).setScrollFactor(0).setDepth(400);
+                scene.time.delayedCall(1000, () => { blind.destroy(); wizard.destroy(); });
+            });
+        }
 
         function create() {
             createTextures(this);
@@ -496,7 +525,7 @@
 
         function startTrollEvents(scene) {
             scene.time.addEvent({ delay: 25000, loop: true, callback: () => {
-                if(!gameActive) return; let blind = scene.add.rectangle(400, 300, 800, 600, 0x000000).setScrollFactor(0).setDepth(300); scene.time.delayedCall(1500, () => blind.destroy());
+                if(!gameActive) return; triggerDarknessSequence(scene);
             }});
             scene.time.addEvent({ delay: 28000, loop: true, callback: () => {
                 if(!gameActive) return; canJumpTroll = false; centerText.setText('קללת כבדות!').setVisible(true).setFill('#800080'); scene.time.delayedCall(3000, () => { canJumpTroll = true; if(gameActive) centerText.setVisible(false); });
