@@ -36,12 +36,13 @@
             this.load.image('homeBackgroundImg', 'מסך הבית.png');
             this.load.image('iceDragonImg', '818VKX6uLAL.jpg');
             this.load.image('stage5DragonImg', 'Gemini_Generated_Image_b1yyxab1yyxab1yy.png');
+            this.load.video('stage5BossVideo', 'video.mp4', 'loadeddata', false, true);
         }
 
         const config = { type: Phaser.AUTO, width: 800, height: 600, parent: 'game-container', physics: { default: 'arcade', arcade: { gravity: { y: 1000 }, debug: false } }, scene: { preload: preload, create: create, update: update } };
         const game = new Phaser.Game(config);
         
-        let player, ground, platforms, iceGround, mysteryBlocks, powerUps, enemies, bats, boss, trueBoss;
+        let player, ground, platforms, iceGround, mysteryBlocks, powerUps, enemies, bats, boss, trueBoss, trueBossVideo;
         let fireballs, missiles, fallingSpikes, springs, healSprings, iceballs, coinsGroup, dragonCoinsGroup, goals, lasers, lava, fakeGoal, defuseOrbs;
         let portals, fakeCoins, homingFireballs; 
         let deathGhost, poisonDrops, badSprings; 
@@ -773,6 +774,10 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
             }
             else if (currentLevel === 5 && trueBoss && trueBoss.getData('isAlive')) {
                 trueBoss.setFlipX(player.x < trueBoss.x);
+                if (trueBossVideo) {
+                    trueBossVideo.setFlipX(trueBoss.flipX);
+                    trueBossVideo.setPosition(trueBoss.x, trueBoss.y);
+                }
                 if (trueBoss.wing) {
                     trueBoss.wing.setFlipX(trueBoss.flipX);
                     trueBoss.wing.x = trueBoss.x + (trueBoss.flipX ? 45 : -45);
@@ -808,6 +813,7 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
                 bTarget.setData('isAlive', false); explodeParticles(scene, bTarget.x, bTarget.y, 0xFF0000, 50); 
                 if (bTarget.wing) bTarget.wing.destroy();
                 if (bTarget.mouth) bTarget.mouth.destroy();
+                if (bTarget === trueBoss && trueBossVideo) { trueBossVideo.destroy(); trueBossVideo = null; }
                 bTarget.destroy(); 
                 if (taskState.noDamageRun) { taskState.completed[3] = true; updateTaskOverlay(); }
                 if(currentLevel === 3) { centerText.setText('הבסת את הדרקון! מתקדם...').setVisible(true); scene.time.delayedCall(2000, () => { centerText.setVisible(false); setupLevel(scene, 4); }); }
