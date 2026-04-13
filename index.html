@@ -58,6 +58,8 @@
         let isPermanentShopOpen = false;
         let gameActiveBeforePermanentShop = false;
         let shopItemTexts = [];
+        let upgradeShopContainer;
+        let homeMenuContainer, helpOverlay, homeMenuActive = true, currentScene;
         
         // --- משתני חנות ותוספות חדשות ---
         let isShopOpen = false, shopContainer;
@@ -122,6 +124,54 @@
 
         function explodeParticles(scene, x, y, color, qty = 15) { let emitter = scene.add.particles(x, y, 'particleTex', { speed: { min: -150, max: 150 }, angle: { min: 0, max: 360 }, scale: { start: 1, end: 0 }, tint: color, lifespan: 600, gravityY: 300, quantity: qty, emitting: false }); emitter.explode(); }
 
+        function toggleHelpOverlay(visible) {
+            if (!helpOverlay) return;
+            helpOverlay.setVisible(visible);
+            homeMenuContainer.setVisible(!visible);
+        }
+
+        function hideHomeMenu() {
+            homeMenuActive = false;
+            if (homeMenuContainer) homeMenuContainer.setVisible(false);
+            if (helpOverlay) helpOverlay.setVisible(false);
+            centerText.setVisible(false);
+        }
+
+        function startGame(scene) {
+            if (homeMenuActive) { hideHomeMenu(); }
+            if (!gameActive && !isShopOpen && !isPermanentShopOpen) {
+                gameActive = true;
+                centerText.setVisible(false);
+                SoundEngine.init();
+                if(currentLevel === 3 || currentLevel === 5) startBossAI(game.scene.scenes[0]);
+            }
+        }
+
+        function createHomeMenu(scene) {
+            homeMenuContainer = scene.add.container(400, 300).setScrollFactor(0).setDepth(300);
+            let bg = scene.add.rectangle(0, 0, 520, 420, 0x071B2C, 0.95).setStrokeStyle(4, 0x00FFFF);
+            let title = scene.add.text(0, -150, 'THE MECHANICAL DRAGON', { fontSize: '34px', fill: '#FFD700', fontStyle: 'bold' }).setOrigin(0.5);
+            let playButton = scene.add.text(0, -40, 'שחק', { fontSize: '44px', fill: '#00FF00', fontStyle: 'bold' }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+            let helpButton = scene.add.text(0, 60, 'איך לשחק', { fontSize: '28px', fill: '#FFFFFF', fontStyle: 'bold' }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+            let hint = scene.add.text(0, 150, 'לחץ על שחק כדי להתחיל, או על איך לשחק לקבל הסבר', { fontSize: '18px', fill: '#AAAAAA', align: 'center', wordWrap: { width: 440 } }).setOrigin(0.5);
+            playButton.on('pointerdown', () => startGame(scene));
+            helpButton.on('pointerdown', () => toggleHelpOverlay(true));
+            homeMenuContainer.add([bg, title, playButton, helpButton, hint]);
+
+            helpOverlay = scene.add.container(400, 300).setScrollFactor(0).setDepth(310).setVisible(false);
+            let overlayBg = scene.add.rectangle(0, 0, 520, 420, 0x000000, 0.95).setStrokeStyle(4, 0x00FFAA);
+            let overlayTitle = scene.add.text(0, -150, 'איך לשחק', { fontSize: '32px', fill: '#00FFAA', fontStyle: 'bold' }).setOrigin(0.5);
+            let overlayBody = scene.add.text(0, -40, `W / ↑ / SPACE - לקפוץ
+X - לירות
+Z - דאש
+N - לפתוח חנות
+B - לפתוח חנות קבועה
+R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { width: 460 } }).setOrigin(0.5);
+            let closeHelp = scene.add.text(0, 150, 'סגור', { fontSize: '24px', fill: '#FF6666', fontStyle: 'bold' }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+            closeHelp.on('pointerdown', () => toggleHelpOverlay(false));
+            helpOverlay.add([overlayBg, overlayTitle, overlayBody, closeHelp]);
+        }
+
         function triggerDarknessSequence(scene) {
             let wizard = scene.add.container(720, 100).setScrollFactor(0).setDepth(310).setAlpha(0);
             let wizardBody = scene.add.image(0, 0, 'wizardTex').setOrigin(0.5, 0.5);
@@ -156,6 +206,7 @@
             cloudLayer = this.add.tileSprite(400, 120, 800, 120, 'cloudTex').setScrollFactor(0).setDepth(2).setAlpha(0.9);
             bgFront = this.add.tileSprite(400, 540, 800, 120, 'frontGrassTex').setScrollFactor(0).setDepth(3).setAlpha(0.9);
 
+            currentScene = this;
             scoreText = this.add.text(16, 16, 'ניקוד: 0', { fontSize: '24px', fill: '#FFF', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setScrollFactor(0).setDepth(200);
             healthText = this.add.text(16, 50, 'חיים: 3', { fontSize: '24px', fill: '#FFF', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setScrollFactor(0).setDepth(200);
             dragonCoinText = this.add.text(16, 84, 'מטבעות דרקון: 0', { fontSize: '20px', fill: '#FFD700', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setScrollFactor(0).setDepth(200);
@@ -163,7 +214,7 @@
             levelText = this.add.text(400, 16, 'שלב: 1', { fontSize: '24px', fill: '#FFF', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(200);
             bossHealthText = this.add.text(600, 16, '', { fontSize: '24px', fill: '#FF0000', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setScrollFactor(0).setDepth(200);
             bombText = this.add.text(400, 80, '', { fontSize: '40px', fill: '#FF0000', fontStyle: 'bold', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(200).setVisible(false);
-            centerText = this.add.text(400, 300, 'W/למעלה: לקפוץ | רווח: לעוף\nX: לירות | R: איפוס | N: חנות | B: חנות קבועה', { fontSize: '24px', fill: '#FFF', fontStyle: 'bold', align:'center', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5).setScrollFactor(0).setDepth(200);
+            centerText = this.add.text(400, 300, '', { fontSize: '24px', fill: '#FFF', fontStyle: 'bold', align:'center', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5).setScrollFactor(0).setDepth(200).setVisible(false);
             bossTalk = this.add.text(0, 0, '', { fontSize: '18px', fill: '#000', backgroundColor: '#FFF', padding: 5 }).setOrigin(0.5).setVisible(false).setDepth(25);
 
             cursors = this.input.keyboard.createCursorKeys(); keys = this.input.keyboard.addKeys('W,A,D,SPACE');
@@ -172,19 +223,16 @@
             gravToggleKey = this.input.keyboard.addKey('G'); superJumpKey = this.input.keyboard.addKey('U'); 
             shopKey = this.input.keyboard.addKey('N');
 
-            this.input.keyboard.on('keydown-W', startGame);
-            this.input.keyboard.on('keydown-UP', startGame);
-            this.input.keyboard.on('keydown-SPACE', startGame);
+            createHomeMenu(this);
+            this.input.keyboard.on('keydown-W', () => startGame(this));
+            this.input.keyboard.on('keydown-UP', () => startGame(this));
+            this.input.keyboard.on('keydown-SPACE', () => startGame(this));
             
             // פתיחת חנות
-            this.input.keyboard.on('keydown-N', () => toggleShop(this));
-
-            function startGame() {
-                if (!gameActive && centerText.visible && !centerText.text.includes('ניצחון') && !isShopOpen) { gameActive = true; centerText.setVisible(false); SoundEngine.init(); if(currentLevel === 3 || currentLevel === 5) startBossAI(game.scene.scenes[0]); }
-            }
+            this.input.keyboard.on('keydown-N', () => { if(!homeMenuActive) toggleShop(this); });
+            this.input.keyboard.on('keydown-B', () => { if(!homeMenuActive && !gameActive && !isShopOpen) togglePermanentShop(this); });
 
             this.input.keyboard.on('keydown-R', () => { window.location.reload(); });
-            this.input.keyboard.on('keydown-B', () => { if(!gameActive && centerText.visible && !isShopOpen) togglePermanentShop(this); });
 
             loadPermanentProgress();
             setupLevel(this, 1);
@@ -208,7 +256,7 @@
             ];
 
             let closeText = scene.add.text(0, 180, 'לחץ N כדי לסגור ולחזור', { fontSize: '20px', fill: '#FF0000', fontStyle: 'bold' }).setOrigin(0.5);
-            shopContainer.add([bg, title, subtitle, ...items, closeText]);
+            shopContainer.add([bg, title, subtitle, ...shopItemTexts, closeText]);
 
             scene.input.keyboard.on('keydown-ONE', () => buyItem(scene, 1, 300));
             scene.input.keyboard.on('keydown-TWO', () => buyItem(scene, 2, 500));
