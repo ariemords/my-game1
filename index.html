@@ -59,6 +59,8 @@
         let trollEventsStarted = false, superJumpActive = false, canJumpTroll = true, gravityFlipped = false;
         let dashSpeed = 1000;
         let permanentUpgrades = { extraLife: false, longDash: false, shopDiscount: false };
+        let activeColliders = [];
+        let levelTransitioning = false;
         let isPermanentShopOpen = false;
         let gameActiveBeforePermanentShop = false;
         let shopItemTexts = [];
