@@ -61,7 +61,7 @@
         let gameActiveBeforePermanentShop = false;
         let shopItemTexts = [];
         let upgradeShopContainer;
-        let homeMenuContainer, helpOverlay, tasksOverlay, homeMenuActive = true, currentScene;
+        let homeMenuContainer, helpOverlay, tasksOverlay, homeMenuActive = true, homeMenuActiveBeforeTasks = false, currentScene;
         let taskButton, tasksActive = false;
         let taskLine1, taskLine2, taskLine3;
         let taskState = { coinsRun: 0, enemiesRun: 0, noDamageRun: true, completed: {1:false,2:false,3:false}, claimed: {1:false,2:false,3:false} };
@@ -76,6 +76,7 @@
 
         let scoreText, healthText, bossHealthText, centerText, levelText, bombText, bossTalk;
         let pet, bubbleShield, fogOverlay;
+        let playerWing, playerMouth;
 
         function createTextures(scene) {
             let g = scene.make.graphics({ x: 0, y: 0, add: false });
@@ -145,13 +146,15 @@
         function openTasksPage(scene) {
             if (!tasksOverlay) return;
             gameWasActiveBeforeTasks = gameActive;
+            homeMenuActiveBeforeTasks = homeMenuActive;
+            homeMenuActive = false;
             if (gameActive) {
                 gameActive = false;
                 scene.physics.world.pause();
             }
             tasksActive = true;
             tasksOverlay.setVisible(true);
-            homeMenuContainer.setVisible(false);
+            if (homeMenuContainer) homeMenuContainer.setVisible(false);
             if (helpOverlay) helpOverlay.setVisible(false);
             taskState.claimed = taskState.claimed || {1:false,2:false,3:false};
             updateTaskOverlay();
@@ -160,14 +163,19 @@
         function closeTasksPage() {
             tasksActive = false;
             if (tasksOverlay) tasksOverlay.setVisible(false);
-            if (homeMenuContainer) homeMenuContainer.setVisible(true);
             if (gameWasActiveBeforeTasks && !isShopOpen && !isPermanentShopOpen) {
                 gameActive = true;
+                homeMenuActive = false;
                 if (currentScene && currentScene.physics && currentScene.physics.world) {
                     currentScene.physics.world.resume();
                 }
+                if (homeMenuContainer) homeMenuContainer.setVisible(false);
+            } else {
+                homeMenuActive = true;
+                if (homeMenuContainer) homeMenuContainer.setVisible(true);
             }
             gameWasActiveBeforeTasks = false;
+            homeMenuActiveBeforeTasks = false;
         }
 
         function claimTask(scene, id) {
@@ -514,8 +522,16 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
                 player = scene.physics.add.sprite(100, 450, 'playerWizardTex').setBounce(0.1).setCollideWorldBounds(true).setDepth(50).setScale(1.1);
                 scene.cameras.main.startFollow(player, true, 0.05, 0.05);
                 bubbleShield = scene.add.image(0, 0, 'bubbleTex').setAlpha(0).setDepth(51);
-                pet = scene.add.image(100, 400, 'petTex').setDepth(52); 
-            } else { player.x = 100; player.y = 450; player.setVelocity(0); player.clearTint(); player.setScale(1.1); }
+                pet = scene.add.image(100, 400, 'petTex').setDepth(52);
+                playerWing = scene.add.image(player.x - 12, player.y - 10, 'dragonWingTex').setOrigin(0.5).setDepth(49);
+                playerMouth = scene.add.image(player.x + 10, player.y + 8, 'dragonMouthTex').setOrigin(0.5).setDepth(51);
+                scene.tweens.add({ targets: playerWing, angle: { from: -25, to: 25 }, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+                scene.tweens.add({ targets: playerMouth, scaleY: { from: 0.8, to: 1.3 }, duration: 300, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+            } else {
+                player.x = 100; player.y = 450; player.setVelocity(0); player.clearTint(); player.setScale(1.1);
+                if (playerWing) { playerWing.setPosition(player.x - 12, player.y - 10); }
+                if (playerMouth) { playerMouth.setPosition(player.x + 10, player.y + 8); }
+            }
 
             deathGhost = scene.physics.add.sprite(3000, 100, 'ghostTex').setAlpha(0.8).setDepth(60); deathGhost.body.allowGravity = false;
 
@@ -772,6 +788,8 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
             } 
             else bossHealthText.setText('');
 
+            if (player && playerWing) { playerWing.setPosition(player.x - 12, player.y - 10); }
+            if (player && playerMouth) { playerMouth.setPosition(player.x + 10, player.y + 8); }
             if (player.y > 600 || player.y < -100) { if(currentLevel !== 3 && currentLevel !== 5) { takeDamage(this); player.x = 100; player.y = 100; player.setVelocity(0); } }
             let scroll = this.cameras.main.scrollX;
             if(cloudLayer) cloudLayer.tilePositionX = scroll * 0.1;
