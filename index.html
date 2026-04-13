@@ -65,6 +65,7 @@
         let taskButton, tasksActive = false;
         let taskLine1, taskLine2, taskLine3;
         let taskState = { coinsRun: 0, enemiesRun: 0, noDamageRun: true, completed: {1:false,2:false,3:false}, claimed: {1:false,2:false,3:false} };
+        let gameWasActiveBeforeTasks = false;
         let specialWeapon = null, playerSkin = false;
         
         // --- משתני חנות ותוספות חדשות ---
@@ -140,6 +141,11 @@
 
         function openTasksPage(scene) {
             if (!tasksOverlay) return;
+            gameWasActiveBeforeTasks = gameActive;
+            if (gameActive) {
+                gameActive = false;
+                scene.physics.world.pause();
+            }
             tasksActive = true;
             tasksOverlay.setVisible(true);
             homeMenuContainer.setVisible(false);
@@ -152,6 +158,13 @@
             tasksActive = false;
             if (tasksOverlay) tasksOverlay.setVisible(false);
             if (homeMenuContainer) homeMenuContainer.setVisible(true);
+            if (gameWasActiveBeforeTasks && !isShopOpen && !isPermanentShopOpen) {
+                gameActive = true;
+                if (currentScene && currentScene.physics && currentScene.physics.world) {
+                    currentScene.physics.world.resume();
+                }
+            }
+            gameWasActiveBeforeTasks = false;
         }
 
         function claimTask(scene, id) {
