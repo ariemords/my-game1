@@ -215,6 +215,11 @@
             centerText.setVisible(false);
         }
 
+        function resetColliders() {
+            activeColliders.forEach(c => { if (c && c.destroy) c.destroy(); });
+            activeColliders = [];
+        }
+
         function startGame(scene) {
             if (homeMenuActive) { hideHomeMenu(); }
             if (!gameActive && !isShopOpen && !isPermanentShopOpen) {
@@ -483,6 +488,7 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
         // ---------------------------------------------
 
         function setupLevel(scene, level) {
+            levelTransitioning = false;
             currentLevel = level; scene.physics.world.timeScale = 1; reverseControls = false; gravityFlipped = false; isTiny = false; bombActive = false; bombText.setVisible(false); superJumpActive = false; canJumpTroll = true; currentSpeed = 250;
             dashSpeed = permanentUpgrades.longDash ? 1600 : 1000;
             health = permanentUpgrades.extraLife ? 4 : 3;
@@ -598,13 +604,24 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
         }
 
         function setupCollisions(scene) {
-            scene.physics.add.collider(player, [ground, platforms, iceGround]); scene.physics.add.collider(enemies, [ground, platforms, iceGround]);
-            scene.physics.add.collider(powerUps, [ground, platforms, iceGround]); scene.physics.add.collider(coinsGroup, [ground, platforms, iceGround]);
-            scene.physics.add.collider(poisonDrops, [ground, platforms, iceGround], (d) => d.destroy()); 
+            resetColliders();
+            activeColliders.push(scene.physics.add.collider(player, [ground, platforms, iceGround]));
+            activeColliders.push(scene.physics.add.collider(enemies, [ground, platforms, iceGround]));
+            activeColliders.push(scene.physics.add.collider(powerUps, [ground, platforms, iceGround]));
+            activeColliders.push(scene.physics.add.collider(coinsGroup, [ground, platforms, iceGround]));
+            activeColliders.push(scene.physics.add.collider(poisonDrops, [ground, platforms, iceGround], (d) => d.destroy()));
 
-            scene.physics.add.collider(player, iceGround, () => { if (Math.abs(player.body.velocity.x) > 10) player.setAccelerationX(player.body.velocity.x * 2); else player.setAccelerationX(0); });
-            scene.physics.add.overlap(player, goals, () => { if (currentLevel < 5) { if (taskState.noDamageRun) taskState.completed[3] = true; updateTaskOverlay(); setupLevel(scene, currentLevel + 1); } });
-            scene.physics.add.overlap(player, deathGhost, (p, g) => { takeDamage(scene); g.x = 3000; g.y = 100; });
+            activeColliders.push(scene.physics.add.collider(player, iceGround, () => { if (Math.abs(player.body.velocity.x) > 10) player.setAccelerationX(player.body.velocity.x * 2); else player.setAccelerationX(0); }));
+            activeColliders.push(scene.physics.add.overlap(player, goals, () => {
+                if (currentLevel < 5 && !levelTransitioning) {
+                    levelTransitioning = true;
+                    if (taskState.noDamageRun) taskState.completed[3] = true;
+                    updateTaskOverlay();
+                    scene.time.delayedCall(100, () => { levelTransitioning = false; });
+                    setupLevel(scene, currentLevel + 1);
+                }
+            }));
+            activeColliders.push(scene.physics.add.overlap(player, deathGhost, (p, g) => { takeDamage(scene); g.x = 3000; g.y = 100; }));
 
             scene.physics.add.collider(player, springs, (p, s) => { p.setVelocityY(gravityFlipped ? 1100 : -1100); SoundEngine.play('coin'); });
             scene.physics.add.collider(player, healSprings, (p, s) => { p.setVelocityY(gravityFlipped ? 900 : -900); if(health < 5) health++; healthText.setText('חיים: ' + health); SoundEngine.play('coin'); });
