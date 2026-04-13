@@ -152,7 +152,7 @@
         function createHomeMenu(scene) {
             homeMenuContainer = scene.add.container(400, 300).setScrollFactor(0).setDepth(300);
             let bg = scene.add.rectangle(0, 0, 520, 420, 0x071B2C, 0.95).setStrokeStyle(4, 0x00FFFF);
-            let homeImage = scene.add.image(0, -20, 'homeBackgroundImg').setOrigin(0.5).setScale(0.8).setAlpha(0.8);
+            let homeImage = scene.add.image(0, 0, 'homeBackgroundImg').setOrigin(0.5).setScale(1.1).setAlpha(0.35);
             let title = scene.add.text(0, -150, 'THE MECHANICAL DRAGON', { fontSize: '34px', fill: '#FFD700', fontStyle: 'bold' }).setOrigin(0.5);
             let playButton = scene.add.text(0, -40, 'שחק', { fontSize: '44px', fill: '#00FF00', fontStyle: 'bold' }).setOrigin(0.5).setInteractive({ useHandCursor: true });
             let helpButton = scene.add.text(0, 60, 'איך לשחק', { fontSize: '28px', fill: '#FFFFFF', fontStyle: 'bold' }).setOrigin(0.5).setInteractive({ useHandCursor: true });
@@ -205,7 +205,7 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
             createTextures(this);
             
             cloudLayer = this.add.tileSprite(400, 120, 800, 120, 'cloudTex').setScrollFactor(0).setDepth(0).setAlpha(0.9);
-            bgFront = this.add.tileSprite(400, 540, 800, 120, 'frontGrassTex').setScrollFactor(0).setDepth(1).setAlpha(0.9);
+            bgFront = this.add.tileSprite(400, 540, 800, 120, 'frontGrassTex').setScrollFactor(0).setDepth(-1).setAlpha(0.65);
 
             currentScene = this;
             scoreText = this.add.text(16, 16, 'ניקוד: 0', { fontSize: '24px', fill: '#FFF', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setScrollFactor(0).setDepth(200);
