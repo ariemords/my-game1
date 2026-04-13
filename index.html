@@ -48,7 +48,7 @@
         
         let score = 0, health = 3, bossHealth = 10, currentLevel = 1;
         let dragonCoins = 0;
-        let bgFar, bgMid, cloudLayer, bgFront;
+        let cloudLayer, bgFront;
         let gameActive = false, isInvincible = false, currentSpeed = 250, hasIcePower = true;
         let lastShotTime = 0, canDoubleJump = false, canDash = true, usedCoinRain = false;
         let reverseControls = false, isTiny = false, bombActive = false, bombTimer = 0;
@@ -201,10 +201,8 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
         function create() {
             createTextures(this);
             
-            bgFar = this.add.tileSprite(400, 260, 800, 240, 'farMountainTex').setScrollFactor(0).setDepth(0);
-            bgMid = this.add.tileSprite(400, 310, 800, 240, 'midTreeTex').setScrollFactor(0).setDepth(1);
-            cloudLayer = this.add.tileSprite(400, 120, 800, 120, 'cloudTex').setScrollFactor(0).setDepth(2).setAlpha(0.9);
-            bgFront = this.add.tileSprite(400, 540, 800, 120, 'frontGrassTex').setScrollFactor(0).setDepth(3).setAlpha(0.9);
+            cloudLayer = this.add.tileSprite(400, 120, 800, 120, 'cloudTex').setScrollFactor(0).setDepth(0).setAlpha(0.9);
+            bgFront = this.add.tileSprite(400, 540, 800, 120, 'frontGrassTex').setScrollFactor(0).setDepth(1).setAlpha(0.9);
 
             currentScene = this;
             scoreText = this.add.text(16, 16, 'ניקוד: 0', { fontSize: '24px', fill: '#FFF', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setScrollFactor(0).setDepth(200);
@@ -609,8 +607,6 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
 
             if (player.y > 600 || player.y < -100) { if(currentLevel !== 3 && currentLevel !== 5) { takeDamage(this); player.x = 100; player.y = 100; player.setVelocity(0); } }
             let scroll = this.cameras.main.scrollX;
-            if(bgFar) bgFar.tilePositionX = scroll * 0.2;
-            if(bgMid) bgMid.tilePositionX = scroll * 0.4;
             if(cloudLayer) cloudLayer.tilePositionX = scroll * 0.1;
             if(bgFront) bgFront.tilePositionX = scroll * 0.6;
         }
@@ -707,10 +703,18 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
             }});
             scene.time.addEvent({ delay: 3000, loop: true, callback: () => {
                 if (!gameActive) return;
-                if (currentLevel === 3 && boss && boss.getData('isAlive') && player.x > 2000) { let fb = fireballs.create(boss.x, boss.y, 'coinTex').setTint(0xFFA500).setScale(1.5); fb.body.allowGravity = false; scene.physics.moveToObject(fb, player, 350); }
-                if (currentLevel === 5 && trueBoss && trueBoss.getData('isAlive') && player.x > 2000) { 
-                    let ms = missiles.create(trueBoss.x, trueBoss.y, 'missileTex'); 
-                    let hfb = homingFireballs.create(trueBoss.x, trueBoss.y, 'blueFireTex'); hfb.body.allowGravity = false; 
+                if (currentLevel === 3 && boss && boss.getData('isAlive') && player.x > 2000) {
+                    let water = homingFireballs.create(boss.x, boss.y, 'blueFireTex').setScale(1.2);
+                    water.body.allowGravity = false;
+                    scene.physics.moveToObject(water, player, 300);
+                }
+                if (currentLevel === 5 && trueBoss && trueBoss.getData('isAlive') && player.x > 2000) {
+                    let ms = missiles.create(trueBoss.x, trueBoss.y, 'missileTex');
+                    ms.body.allowGravity = false;
+                    scene.physics.moveToObject(ms, player, 400);
+                    let hfb = homingFireballs.create(trueBoss.x, trueBoss.y, 'blueFireTex');
+                    hfb.body.allowGravity = false;
+                    scene.physics.moveToObject(hfb, player, 250);
                 }
             }});
             scene.time.addEvent({ delay: 8000, loop: true, callback: () => {
