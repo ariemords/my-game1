@@ -60,8 +60,8 @@
         let dashSpeed = 1000;
         let permanentUpgrades = { extraLife: false, longDash: false, shopDiscount: false };
         let activeColliders = [];
+        let pendingLevelAdvance = 0;
         let levelTransitioning = false;
-        let goalReached = false;
         let isPermanentShopOpen = false;
         let gameActiveBeforePermanentShop = false;
         let shopItemTexts = [];
@@ -491,8 +491,9 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
         // ---------------------------------------------
 
         function setupLevel(scene, level) {
+            pendingLevelAdvance = 0;
             levelTransitioning = false;
-            currentLevel = level; levelTransitioning = false; goalReached = false;
+            currentLevel = level;
             scene.physics.world.timeScale = 1; reverseControls = false; gravityFlipped = false; isTiny = false; bombActive = false; bombText.setVisible(false); superJumpActive = false; canJumpTroll = true; currentSpeed = 250;
             dashSpeed = permanentUpgrades.longDash ? 1600 : 1000;
             health = permanentUpgrades.extraLife ? 4 : 3;
@@ -624,8 +625,8 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
 
             activeColliders.push(scene.physics.add.collider(player, iceGround, () => { if (Math.abs(player.body.velocity.x) > 10) player.setAccelerationX(player.body.velocity.x * 2); else player.setAccelerationX(0); }));
             activeColliders.push(scene.physics.add.overlap(player, goals, () => {
-                if (currentLevel < 5 && !goalReached) {
-                    goalReached = true;
+                if (currentLevel < 5 && !pendingLevelAdvance) {
+                    pendingLevelAdvance = currentLevel + 1;
                     if (taskState.noDamageRun) taskState.completed[3] = true;
                     updateTaskOverlay();
                 }
@@ -697,11 +698,12 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
         }
 
         function update(time) {
-            if (goalReached && !levelTransitioning) {
-                goalReached = false;
+            if (pendingLevelAdvance && !levelTransitioning) {
+                const nextLevel = pendingLevelAdvance;
+                pendingLevelAdvance = 0;
                 levelTransitioning = true;
                 this.time.delayedCall(10, () => {
-                    setupLevel(this, currentLevel + 1);
+                    setupLevel(this, nextLevel);
                     levelTransitioning = false;
                 });
             }
@@ -856,7 +858,13 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
                 if (bTarget === trueBoss && trueBossVideo) { trueBossVideo.destroy(); trueBossVideo = null; }
                 bTarget.destroy(); 
                 if (taskState.noDamageRun) { taskState.completed[3] = true; updateTaskOverlay(); }
-                if(currentLevel === 3) { centerText.setText('הבסת את הדרקון! מתקדם...').setVisible(true); scene.time.delayedCall(2000, () => { centerText.setVisible(false); setupLevel(scene, 4); }); }
+                if(currentLevel === 3) {
+                    centerText.setText('הבסת את הדרקון! מתקדם...').setVisible(true);
+                    pendingLevelAdvance = 4;
+                    this.time.delayedCall(2000, () => {
+                        centerText.setVisible(false);
+                    });
+                }
                 else { gameActive = false; playVictorySequence(scene); }
             }
         }
