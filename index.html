@@ -576,9 +576,13 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
             } else if (level === 5) {
                 [600, 1200, 1800, 2400].forEach((x) => { let p = platforms.create(x, 400, 'platTex'); p.body.checkCollision.down = false; });
                 
-                trueBoss = scene.physics.add.sprite(2900, 150, 'stage5DragonImg').setCollideWorldBounds(true).setData('isAlive', true).setData('hp', 20);
+                trueBoss = scene.physics.add.sprite(2900, 150, 'stage5DragonImg').setCollideWorldBounds(true).setData('isAlive', true).setData('hp', 20).setVisible(false);
                 trueBoss.setDisplaySize(220, 140);
                 trueBoss.body.allowGravity = false;
+                trueBoss.body.setSize(220, 140, true);
+                trueBossVideo = scene.add.video(trueBoss.x, trueBoss.y, 'stage5BossVideo').setOrigin(0.5).setDisplaySize(220, 140).setDepth(98);
+                trueBossVideo.play(true);
+                trueBossVideo.setLoop(true);
                 trueBoss.wing = scene.add.image(trueBoss.x - 45, trueBoss.y - 10, 'dragonWingTex').setOrigin(0.5).setDepth(99);
                 trueBoss.mouth = scene.add.image(trueBoss.x + 45, trueBoss.y + 20, 'dragonMouthTex').setOrigin(0.5).setDepth(101);
                 scene.tweens.add({ targets: trueBoss.wing, angle: { from: -35, to: 35 }, duration: 420, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
