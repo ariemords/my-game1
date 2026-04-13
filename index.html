@@ -33,8 +33,9 @@
         };
 
         function preload() {
-            this.load.image('homeBackgroundImg', '818VKX6uLAL.jpg');
+            this.load.image('homeBackgroundImg', 'מסך הבית.png');
             this.load.image('iceDragonImg', '818VKX6uLAL.jpg');
+            this.load.image('stage5DragonImg', 'Gemini_Generated_Image_b1yyxab1yyxab1yy.png');
         }
 
         const config = { type: Phaser.AUTO, width: 800, height: 600, parent: 'game-container', physics: { default: 'arcade', arcade: { gravity: { y: 1000 }, debug: false } }, scene: { preload: preload, create: create, update: update } };
@@ -60,7 +61,11 @@
         let gameActiveBeforePermanentShop = false;
         let shopItemTexts = [];
         let upgradeShopContainer;
-        let homeMenuContainer, helpOverlay, homeMenuActive = true, currentScene;
+        let homeMenuContainer, helpOverlay, tasksOverlay, homeMenuActive = true, currentScene;
+        let taskButton, tasksActive = false;
+        let taskLine1, taskLine2, taskLine3;
+        let taskState = { coinsRun: 0, enemiesRun: 0, noDamageRun: true, completed: {1:false,2:false,3:false}, claimed: {1:false,2:false,3:false} };
+        let specialWeapon = null, playerSkin = false;
         
         // --- משתני חנות ותוספות חדשות ---
         let isShopOpen = false, shopContainer;
@@ -130,12 +135,57 @@
             if (!helpOverlay) return;
             helpOverlay.setVisible(visible);
             homeMenuContainer.setVisible(!visible);
+            if (tasksOverlay) tasksOverlay.setVisible(false);
+        }
+
+        function openTasksPage(scene) {
+            if (!tasksOverlay) return;
+            tasksActive = true;
+            tasksOverlay.setVisible(true);
+            homeMenuContainer.setVisible(false);
+            if (helpOverlay) helpOverlay.setVisible(false);
+            taskState.claimed = taskState.claimed || {1:false,2:false,3:false};
+            updateTaskOverlay();
+        }
+
+        function closeTasksPage() {
+            tasksActive = false;
+            if (tasksOverlay) tasksOverlay.setVisible(false);
+            if (homeMenuContainer) homeMenuContainer.setVisible(true);
+        }
+
+        function claimTask(scene, id) {
+            if (!tasksOverlay || !tasksOverlay.visible) return;
+            if (!taskState.completed[id] || taskState.claimed[id]) {
+                SoundEngine.play('hit');
+                return;
+            }
+            taskState.claimed[id] = true;
+            let reward = 0;
+            if (id === 1) reward = 200;
+            if (id === 2) reward = 250;
+            if (id === 3) reward = 300;
+            score += reward;
+            scoreText.setText('ניקוד: ' + score);
+            SoundEngine.play('coin');
+            updateTaskOverlay();
+        }
+
+        function updateTaskOverlay() {
+            if (!taskLine1 || !taskLine2 || !taskLine3) return;
+            taskLine1.setText(`1. אסוף 40 מטבעות בריצה אחת - ${taskState.completed[1] ? (taskState.claimed[1] ? 'נלקח' : 'מוכן!') : `בוצע ${taskState.coinsRun}/40`}`);
+            taskLine2.setText(`2. הורג 8 אויבים בריצה אחת - ${taskState.completed[2] ? (taskState.claimed[2] ? 'נלקח' : 'מוכן!') : `בוצע ${taskState.enemiesRun}/8`}`);
+            taskLine3.setText(`3. השלם שלב בלי לקבל נזק - ${taskState.completed[3] ? (taskState.claimed[3] ? 'נלקח' : 'מוכן!') : (taskState.noDamageRun ? 'בשוויון' : 'נכשל')}`);
+            taskLine1.setColor(taskState.completed[1] ? (taskState.claimed[1] ? '#888888' : '#00FF00') : '#FFFFFF');
+            taskLine2.setColor(taskState.completed[2] ? (taskState.claimed[2] ? '#888888' : '#00FF00') : '#FFFFFF');
+            taskLine3.setColor(taskState.completed[3] ? (taskState.claimed[3] ? '#888888' : '#00FF00') : '#FFFFFF');
         }
 
         function hideHomeMenu() {
             homeMenuActive = false;
             if (homeMenuContainer) homeMenuContainer.setVisible(false);
             if (helpOverlay) helpOverlay.setVisible(false);
+            if (tasksOverlay) tasksOverlay.setVisible(false);
             centerText.setVisible(false);
         }
 
@@ -151,15 +201,17 @@
 
         function createHomeMenu(scene) {
             homeMenuContainer = scene.add.container(400, 300).setScrollFactor(0).setDepth(300);
-            let homeImage = scene.add.image(0, 0, 'homeBackgroundImg').setOrigin(0.5).setDisplaySize(520, 420).setAlpha(0.65);
-            let bg = scene.add.rectangle(0, 0, 520, 420, 0x000000, 0.25).setStrokeStyle(4, 0x00FFFF);
+            let homeImage = scene.add.image(0, 0, 'homeBackgroundImg').setOrigin(0.5).setDisplaySize(760, 520).setAlpha(1);
+            let bg = scene.add.rectangle(0, 0, 760, 520, 0x000000, 0.2).setStrokeStyle(4, 0x00FFFF);
             let title = scene.add.text(0, -150, 'THE MECHANICAL DRAGON', { fontSize: '34px', fill: '#FFD700', fontStyle: 'bold' }).setOrigin(0.5);
             let playButton = scene.add.text(0, -40, 'שחק', { fontSize: '44px', fill: '#00FF00', fontStyle: 'bold' }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-            let helpButton = scene.add.text(0, 60, 'איך לשחק', { fontSize: '28px', fill: '#FFFFFF', fontStyle: 'bold' }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-            let hint = scene.add.text(0, 150, 'לחץ על שחק כדי להתחיל, או על איך לשחק לקבל הסבר', { fontSize: '18px', fill: '#AAAAAA', align: 'center', wordWrap: { width: 440 } }).setOrigin(0.5);
+            let helpButton = scene.add.text(0, 40, 'איך לשחק', { fontSize: '28px', fill: '#FFFFFF', fontStyle: 'bold' }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+            let taskButton = scene.add.text(0, 100, 'משימות', { fontSize: '28px', fill: '#00AAFF', fontStyle: 'bold' }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+            let hint = scene.add.text(0, 160, 'לחץ על שחק כדי להתחיל, או על המשימות לקבל פרסים מיוחדים', { fontSize: '18px', fill: '#AAAAAA', align: 'center', wordWrap: { width: 440 } }).setOrigin(0.5);
             playButton.on('pointerdown', () => startGame(scene));
             helpButton.on('pointerdown', () => toggleHelpOverlay(true));
-            homeMenuContainer.add([homeImage, bg, title, playButton, helpButton, hint]);
+            taskButton.on('pointerdown', () => openTasksPage(scene));
+            homeMenuContainer.add([homeImage, bg, title, playButton, helpButton, taskButton, hint]);
 
             helpOverlay = scene.add.container(400, 300).setScrollFactor(0).setDepth(310).setVisible(false);
             let overlayBg = scene.add.rectangle(0, 0, 520, 420, 0x000000, 0.95).setStrokeStyle(4, 0x00FFAA);
@@ -168,11 +220,22 @@
 X - לירות
 Z - דאש
 N - לפתוח חנות
-B - לפתוח חנות קבועה
+B - פתוח חנות קבועה
 R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { width: 460 } }).setOrigin(0.5);
             let closeHelp = scene.add.text(0, 150, 'סגור', { fontSize: '24px', fill: '#FF6666', fontStyle: 'bold' }).setOrigin(0.5).setInteractive({ useHandCursor: true });
             closeHelp.on('pointerdown', () => toggleHelpOverlay(false));
             helpOverlay.add([overlayBg, overlayTitle, overlayBody, closeHelp]);
+
+            tasksOverlay = scene.add.container(400, 300).setScrollFactor(0).setDepth(315).setVisible(false);
+            let taskBg = scene.add.rectangle(0, 0, 520, 420, 0x10101A, 0.98).setStrokeStyle(4, 0x00AAFF);
+            let taskTitle = scene.add.text(0, -180, '📜 משימות', { fontSize: '32px', fill: '#00AAFF', fontStyle: 'bold' }).setOrigin(0.5);
+            taskLine1 = scene.add.text(-200, -90, '1. אסוף 40 מטבעות בריצה אחת', { fontSize: '20px', fill: '#FFFFFF', wordWrap: { width: 420 } });
+            taskLine2 = scene.add.text(-200, -30, '2. הורג 8 אויבים בריצה אחת', { fontSize: '20px', fill: '#FFFFFF', wordWrap: { width: 420 } });
+            taskLine3 = scene.add.text(-200, 30, '3. השלם שלב בלי לקבל נזק', { fontSize: '20px', fill: '#FFFFFF', wordWrap: { width: 420 } });
+            let taskHint = scene.add.text(0, 100, 'לחץ 1/2/3 לתבוע פרס אם המטרה הושלמה', { fontSize: '18px', fill: '#AAAAAA' }).setOrigin(0.5);
+            let taskClose = scene.add.text(0, 170, 'סגור', { fontSize: '24px', fill: '#FF6666', fontStyle: 'bold' }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+            taskClose.on('pointerdown', () => closeTasksPage());
+            tasksOverlay.add([taskBg, taskTitle, taskLine1, taskLine2, taskLine3, taskHint, taskClose]);
         }
 
         function triggerDarknessSequence(scene) {
@@ -232,6 +295,9 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
             // פתיחת חנות
             this.input.keyboard.on('keydown-N', () => { if(!homeMenuActive) toggleShop(this); });
             this.input.keyboard.on('keydown-B', () => { if(!homeMenuActive && !gameActive && !isShopOpen) togglePermanentShop(this); });
+            this.input.keyboard.on('keydown-ONE', () => { if(tasksOverlay && tasksOverlay.visible) claimTask(this, 1); });
+            this.input.keyboard.on('keydown-TWO', () => { if(tasksOverlay && tasksOverlay.visible) claimTask(this, 2); });
+            this.input.keyboard.on('keydown-THREE', () => { if(tasksOverlay && tasksOverlay.visible) claimTask(this, 3); });
 
             this.input.keyboard.on('keydown-R', () => { window.location.reload(); });
 
@@ -250,19 +316,27 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
             let subtitle = scene.add.text(0, -140, 'לחץ על המספר כדי לקנות', { fontSize: '18px', fill: '#AAAAAA' }).setOrigin(0.5);
             
             shopItemTexts = [
-                scene.add.text(-220, -80, `1. רובה קרח מהיר [${getInGamePrice(300)} נק\']`, { fontSize: '24px', fill: '#00FFFF' }),
-                scene.add.text(-220, -30, `2. שריון זהב (+5 חיים) [${getInGamePrice(500)} נק\']`, { fontSize: '24px', fill: '#FFD700' }),
-                scene.add.text(-220, 20, `3. מגן בועה זמני [${getInGamePrice(200)} נק\']`, { fontSize: '24px', fill: '#FFFFFF' }),
-                scene.add.text(-220, 70, `4. רחפן תקיפה מלווה [${getInGamePrice(800)} נק\']`, { fontSize: '24px', fill: '#FF00FF' })
+                scene.add.text(-220, -160, `1. רובה קרח מהיר [${getInGamePrice(300)} נק\']`, { fontSize: '22px', fill: '#00FFFF' }),
+                scene.add.text(-220, -120, `2. שריון זהב (+5 חיים) [${getInGamePrice(500)} נק\']`, { fontSize: '22px', fill: '#FFD700' }),
+                scene.add.text(-220, -80, `3. מגן בועה זמני [${getInGamePrice(200)} נק\']`, { fontSize: '22px', fill: '#FFFFFF' }),
+                scene.add.text(-220, -40, `4. רחפן תקיפה מלווה [${getInGamePrice(800)} נק\']`, { fontSize: '22px', fill: '#FF00FF' }),
+                scene.add.text(-220, 0, `5. תותח אש חזק [${getInGamePrice(1000)} נק\']`, { fontSize: '22px', fill: '#FF4500' }),
+                scene.add.text(-220, 40, `6. סקין סודי לשחקן [${getInGamePrice(700)} נק\']`, { fontSize: '22px', fill: '#AA00FF' }),
+                scene.add.text(-220, 80, `7. קסם קרח אולטימטיבי [${getInGamePrice(1200)} נק\']`, { fontSize: '22px', fill: '#00FFFF' }),
+                scene.add.text(-220, 120, `8. לשדרג מראה דרקון [${getInGamePrice(900)} נק\']`, { fontSize: '22px', fill: '#FF00FF' })
             ];
 
-            let closeText = scene.add.text(0, 180, 'לחץ N כדי לסגור ולחזור', { fontSize: '20px', fill: '#FF0000', fontStyle: 'bold' }).setOrigin(0.5);
+            let closeText = scene.add.text(0, 190, 'לחץ N כדי לסגור ולחזור', { fontSize: '20px', fill: '#FF0000', fontStyle: 'bold' }).setOrigin(0.5);
             shopContainer.add([bg, title, subtitle, ...shopItemTexts, closeText]);
 
             scene.input.keyboard.on('keydown-ONE', () => buyItem(scene, 1, 300));
             scene.input.keyboard.on('keydown-TWO', () => buyItem(scene, 2, 500));
             scene.input.keyboard.on('keydown-THREE', () => buyItem(scene, 3, 200));
             scene.input.keyboard.on('keydown-FOUR', () => buyItem(scene, 4, 800));
+            scene.input.keyboard.on('keydown-FIVE', () => buyItem(scene, 5, 1000));
+            scene.input.keyboard.on('keydown-SIX', () => buyItem(scene, 6, 700));
+            scene.input.keyboard.on('keydown-SEVEN', () => buyItem(scene, 7, 1200));
+            scene.input.keyboard.on('keydown-EIGHT', () => buyItem(scene, 8, 900));
         }
 
         function createPermanentShop(scene) {
@@ -338,6 +412,7 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
         }
 
         function buyItem(scene, id, price) {
+            if (tasksOverlay && tasksOverlay.visible) return;
             let actualPrice = getInGamePrice(price);
             if (!isShopOpen || score < actualPrice) {
                 if (isShopOpen) SoundEngine.play('hit'); // אין מספיק כסף
@@ -348,13 +423,34 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
             SoundEngine.play('coin');
             explodeParticles(scene, 400, 300, 0xFFD700, 40); // אפקט קנייה
 
-            if (id === 1) shootDelay = 150; // ירי כמעט אוטומטי
+            if (id === 1) {
+                shootDelay = 150;
+                specialWeapon = 'ice';
+            }
             if (id === 2) { health += 5; healthText.setText('חיים: ' + health); player.setTint(0xFFD700); }
             if (id === 3) { isInvincible = true; bubbleShield.setAlpha(1); scene.time.delayedCall(10000, () => { isInvincible = false; bubbleShield.setAlpha(0); }); }
             if (id === 4 && !hasDrone) { 
                 hasDrone = true; 
                 attackDrone = scene.physics.add.sprite(player.x, player.y - 50, 'droneTex').setDepth(55);
                 attackDrone.body.allowGravity = false;
+            }
+            if (id === 5) {
+                specialWeapon = 'fire';
+                shootDelay = 200;
+                if (player) player.setTint(0xFF4500);
+            }
+            if (id === 6) {
+                playerSkin = true;
+                if (player) player.setTint(0xAA00FF);
+            }
+            if (id === 7) {
+                specialWeapon = 'ultimateIce';
+                shootDelay = 100;
+                if (player) player.setTint(0x00FFFF);
+            }
+            if (id === 8) {
+                playerSkin = true;
+                if (player) player.setTint(0x00AAFF);
             }
         }
         // ---------------------------------------------
@@ -365,6 +461,9 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
             health = permanentUpgrades.extraLife ? 4 : 3;
             if(levelText) levelText.setText('שלב: ' + level);
             if(healthText) healthText.setText('חיים: ' + health);
+            taskState.coinsRun = 0;
+            taskState.enemiesRun = 0;
+            taskState.noDamageRun = true;
 
             let groups = [ground, platforms, iceGround, mysteryBlocks, enemies, bats, goals, springs, healSprings, lasers, lava, fireballs, missiles, fallingSpikes, iceballs, coinsGroup, powerUps, defuseOrbs, portals, fakeCoins, homingFireballs, poisonDrops, badSprings];
             groups.forEach(g => { if(g) g.clear(true, true); });
@@ -438,10 +537,9 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
             } else if (level === 5) {
                 [600, 1200, 1800, 2400].forEach((x) => { let p = platforms.create(x, 400, 'platTex'); p.body.checkCollision.down = false; });
                 
-                trueBoss = scene.physics.add.sprite(2900, 150, 'iceDragonImg').setCollideWorldBounds(true).setData('isAlive', true).setData('hp', 20);
-                trueBoss.setDisplaySize(180, 120); 
-                trueBoss.setTint(0x333333); 
-                trueBoss.body.allowGravity = false; 
+                    trueBoss = scene.physics.add.sprite(2900, 150, 'stage5DragonImg').setCollideWorldBounds(true).setData('isAlive', true).setData('hp', 20);
+                trueBoss.setDisplaySize(220, 140);
+                trueBoss.body.allowGravity = false;
                 scene.tweens.add({ targets: trueBoss, y: trueBoss.y - 30, duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
                 dragonCoinsGroup.create(2500, 470, 'dragonCoinTex').setBounce(0.5).setCollideWorldBounds(true);
                 
@@ -458,7 +556,7 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
             scene.physics.add.collider(poisonDrops, [ground, platforms, iceGround], (d) => d.destroy()); 
 
             scene.physics.add.collider(player, iceGround, () => { if (Math.abs(player.body.velocity.x) > 10) player.setAccelerationX(player.body.velocity.x * 2); else player.setAccelerationX(0); });
-            scene.physics.add.overlap(player, goals, () => { if (currentLevel < 5) setupLevel(scene, currentLevel + 1); });
+            scene.physics.add.overlap(player, goals, () => { if (currentLevel < 5) { if (taskState.noDamageRun) taskState.completed[3] = true; updateTaskOverlay(); setupLevel(scene, currentLevel + 1); } });
             scene.physics.add.overlap(player, deathGhost, (p, g) => { takeDamage(scene); g.x = 3000; g.y = 100; });
 
             scene.physics.add.collider(player, springs, (p, s) => { p.setVelocityY(gravityFlipped ? 1100 : -1100); SoundEngine.play('coin'); });
@@ -488,16 +586,16 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
             scene.physics.add.collider(iceballs, [ground, platforms], (i) => i.destroy());
             scene.physics.add.collider(iceballs, enemies, (i, e) => {
                 i.destroy(); SoundEngine.play('hit');
-                if(e.getData('isGiant')) { e.setData('hp', e.getData('hp') - 1); e.setTint(0x00FFFF); scene.time.delayedCall(100, () => e.clearTint()); if(e.getData('hp') <= 0) { e.destroy(); score+=50; scoreText.setText('ניקוד: ' + score); explodeParticles(scene, e.x, e.y, 0xFFFFFF, 30); } } 
-                else { e.destroy(); score+=30; scoreText.setText('ניקוד: ' + score); explodeParticles(scene, e.x, e.y, Math.random()*0xFFFFFF, 20); }
+                if(e.getData('isGiant')) { e.setData('hp', e.getData('hp') - 1); e.setTint(0x00FFFF); scene.time.delayedCall(100, () => e.clearTint()); if(e.getData('hp') <= 0) { e.destroy(); score+=50; scoreText.setText('ניקוד: ' + score); taskState.enemiesRun += 1; if (taskState.enemiesRun >= 8) taskState.completed[2] = true; updateTaskOverlay(); explodeParticles(scene, e.x, e.y, 0xFFFFFF, 30); } } 
+                else { e.destroy(); score+=30; scoreText.setText('ניקוד: ' + score); taskState.enemiesRun += 1; if (taskState.enemiesRun >= 8) taskState.completed[2] = true; updateTaskOverlay(); explodeParticles(scene, e.x, e.y, Math.random()*0xFFFFFF, 20); }
             });
             scene.physics.add.collider(iceballs, bats, (i, b) => { b.destroy(); i.destroy(); score+=40; SoundEngine.play('hit'); explodeParticles(scene, b.x, b.y, 0x00FFFF, 10); });
             
             scene.physics.add.collider(player, enemies, (p, e) => {
                 if ((!gravityFlipped && p.body.touching.down && e.body.touching.up && p.body.velocity.y > 0) || (gravityFlipped && p.body.touching.up && e.body.touching.down && p.body.velocity.y < 0)) { 
                     p.setVelocityY(gravityFlipped ? (superJumpActive ? 900 : 600) : (isTiny ? -250 : (superJumpActive ? -600 : -350)));
-                    if(e.getData('isGiant')) { e.setData('hp', e.getData('hp') - 1); e.setTint(0xFF0000); scene.time.delayedCall(100, () => e.clearTint()); SoundEngine.play('hit'); if(e.getData('hp') <= 0) { e.destroy(); score+=50; scoreText.setText('ניקוד: ' + score); explodeParticles(scene, e.x, e.y, 0xFFFFFF, 30); } }
-                    else { e.destroy(); score+=20; scoreText.setText('ניקוד: ' + score); SoundEngine.play('jump'); explodeParticles(scene, e.x, e.y, Math.random()*0xFFFFFF, 20); } 
+                    if(e.getData('isGiant')) { e.setData('hp', e.getData('hp') - 1); e.setTint(0xFF0000); scene.time.delayedCall(100, () => e.clearTint()); SoundEngine.play('hit'); if(e.getData('hp') <= 0) { e.destroy(); score+=50; taskState.enemiesRun += 1; if (taskState.enemiesRun >= 8) taskState.completed[2] = true; scoreText.setText('ניקוד: ' + score); updateTaskOverlay(); explodeParticles(scene, e.x, e.y, 0xFFFFFF, 30); } }
+                    else { e.destroy(); score+=20; taskState.enemiesRun += 1; if (taskState.enemiesRun >= 8) taskState.completed[2] = true; scoreText.setText('ניקוד: ' + score); updateTaskOverlay(); SoundEngine.play('jump'); explodeParticles(scene, e.x, e.y, Math.random()*0xFFFFFF, 20); } 
                 } 
                 else { takeDamage(scene); if(e.texture.key === 'thiefTex') { hasIcePower = false; centerText.setText('גנבו לך את הקרח!').setVisible(true).setFill('#FF0000'); scene.time.delayedCall(5000, () => { hasIcePower = true; if(gameActive) centerText.setVisible(false); }); } } 
             });
@@ -522,7 +620,7 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
                 scene.physics.add.overlap(player, fireballs, (p, f) => { f.destroy(); takeDamage(scene); });
             }
 
-            scene.physics.add.overlap(player, coinsGroup, (p, c) => { let val = c.getData('diamond') ? 100 : 10; c.destroy(); score += val; scoreText.setText('ניקוד: ' + score); SoundEngine.play('coin'); });
+            scene.physics.add.overlap(player, coinsGroup, (p, c) => { let val = c.getData('diamond') ? 100 : 10; c.destroy(); score += val; scoreText.setText('ניקוד: ' + score); SoundEngine.play('coin'); taskState.coinsRun += 1; if (taskState.coinsRun >= 40) taskState.completed[1] = true; updateTaskOverlay(); });
         }
 
         function update(time) {
@@ -565,8 +663,21 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
             if (Phaser.Input.Keyboard.JustDown(meteorKey)) { let m = fireballs.create(player.x + (player.flipX ? -300 : 300), 0, 'powerTex').setTint(0xFF0000); m.body.allowGravity = true; m.setVelocityY(500); SoundEngine.play('shoot'); }
             
             // ירי עם המשתנה החדש של shootDelay (משתדרג דרך החנות)
-            if (Phaser.Input.Keyboard.JustDown(shootKey) && hasIcePower && time > lastShotTime + shootDelay) { 
-                lastShotTime = time; SoundEngine.play('shoot'); let ice = iceballs.create(player.x, player.y, 'iceTex'); ice.setVelocityX(player.flipX ? -500 : 500); ice.body.allowGravity = false; 
+            if (Phaser.Input.Keyboard.JustDown(shootKey) && hasIcePower && time > lastShotTime + shootDelay) {
+                lastShotTime = time;
+                SoundEngine.play('shoot');
+                if (specialWeapon === 'ultimateIce') {
+                    ['-1','0','1'].forEach((offset, index) => {
+                        let ice = iceballs.create(player.x, player.y, 'iceTex');
+                        ice.setVelocityX(player.flipX ? -500 : 500);
+                        ice.setVelocityY((index - 1) * 100);
+                        ice.body.allowGravity = false;
+                    });
+                } else {
+                    let ice = iceballs.create(player.x, player.y, 'iceTex');
+                    ice.setVelocityX(player.flipX ? -500 : 500);
+                    ice.body.allowGravity = false;
+                }
             }
             
             if (Phaser.Input.Keyboard.JustDown(dashKey) && canDash) { canDash = false; player.setVelocityX(player.flipX ? -dashSpeed : dashSpeed); SoundEngine.play('shoot'); this.time.delayedCall(1000, () => canDash = true); }
@@ -624,6 +735,7 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
             if (hp <= 5 && !bTarget.getData('enraged')) bTarget.setData('enraged', true);
             if (hp <= 0) { 
                 bTarget.setData('isAlive', false); explodeParticles(scene, bTarget.x, bTarget.y, 0xFF0000, 50); bTarget.destroy(); 
+                if (taskState.noDamageRun) { taskState.completed[3] = true; updateTaskOverlay(); }
                 if(currentLevel === 3) { centerText.setText('הבסת את הדרקון! מתקדם...').setVisible(true); scene.time.delayedCall(2000, () => { centerText.setVisible(false); setupLevel(scene, 4); }); }
                 else { gameActive = false; centerText.setText('ניצחת את המשחק לחלוטין!!!').setVisible(true).setFill('#00FF00'); scene.cameras.main.zoomTo(2, 2000); }
             }
@@ -684,6 +796,10 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
             shopItemTexts[1].setText(`2. שריון זהב (+5 חיים) [${getInGamePrice(500)} נק']`);
             shopItemTexts[2].setText(`3. מגן בועה זמני [${getInGamePrice(200)} נק']`);
             shopItemTexts[3].setText(`4. רחפן תקיפה מלווה [${getInGamePrice(800)} נק']`);
+            shopItemTexts[4].setText(`5. תותח אש חזק [${getInGamePrice(1000)} נק']`);
+            shopItemTexts[5].setText(`6. סקין סודי לשחקן [${getInGamePrice(700)} נק']`);
+            shopItemTexts[6].setText(`7. קסם קרח אולטימטיבי [${getInGamePrice(1200)} נק']`);
+            shopItemTexts[7].setText(`8. לשדרג מראה דרקון [${getInGamePrice(900)} נק']`);
         }
 
         function takeDamage(scene) {
@@ -696,6 +812,7 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
             scene.time.delayedCall(200, () => player.clearTint()); scene.time.delayedCall(400, () => player.setTint(0xFF0000));
             scene.time.delayedCall(1000, () => { isInvincible = false; player.clearTint(); });
             if (health <= 0) { gameActive = false; player.setTint(0xFF0000); centerText.setText('פסילה!\nלחץ R כדי להתחיל מחדש').setVisible(true).setFill('#FF0000'); }
+            taskState.noDamageRun = false;
         }
 
         function startBossAI(scene) {
