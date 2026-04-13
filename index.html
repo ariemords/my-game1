@@ -151,15 +151,15 @@
 
         function createHomeMenu(scene) {
             homeMenuContainer = scene.add.container(400, 300).setScrollFactor(0).setDepth(300);
-            let bg = scene.add.rectangle(0, 0, 520, 420, 0x071B2C, 0.95).setStrokeStyle(4, 0x00FFFF);
-            let homeImage = scene.add.image(0, 0, 'homeBackgroundImg').setOrigin(0.5).setScale(1.1).setAlpha(0.35);
+            let homeImage = scene.add.image(0, 0, 'homeBackgroundImg').setOrigin(0.5).setDisplaySize(520, 420).setAlpha(0.65);
+            let bg = scene.add.rectangle(0, 0, 520, 420, 0x000000, 0.25).setStrokeStyle(4, 0x00FFFF);
             let title = scene.add.text(0, -150, 'THE MECHANICAL DRAGON', { fontSize: '34px', fill: '#FFD700', fontStyle: 'bold' }).setOrigin(0.5);
             let playButton = scene.add.text(0, -40, 'שחק', { fontSize: '44px', fill: '#00FF00', fontStyle: 'bold' }).setOrigin(0.5).setInteractive({ useHandCursor: true });
             let helpButton = scene.add.text(0, 60, 'איך לשחק', { fontSize: '28px', fill: '#FFFFFF', fontStyle: 'bold' }).setOrigin(0.5).setInteractive({ useHandCursor: true });
             let hint = scene.add.text(0, 150, 'לחץ על שחק כדי להתחיל, או על איך לשחק לקבל הסבר', { fontSize: '18px', fill: '#AAAAAA', align: 'center', wordWrap: { width: 440 } }).setOrigin(0.5);
             playButton.on('pointerdown', () => startGame(scene));
             helpButton.on('pointerdown', () => toggleHelpOverlay(true));
-            homeMenuContainer.add([bg, homeImage, title, playButton, helpButton, hint]);
+            homeMenuContainer.add([homeImage, bg, title, playButton, helpButton, hint]);
 
             helpOverlay = scene.add.container(400, 300).setScrollFactor(0).setDepth(310).setVisible(false);
             let overlayBg = scene.add.rectangle(0, 0, 520, 420, 0x000000, 0.95).setStrokeStyle(4, 0x00FFAA);
@@ -438,9 +438,9 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
             } else if (level === 5) {
                 [600, 1200, 1800, 2400].forEach((x) => { let p = platforms.create(x, 400, 'platTex'); p.body.checkCollision.down = false; });
                 
-                trueBoss = scene.physics.add.sprite(2900, 150, 'darkDragonTex').setCollideWorldBounds(true).setData('isAlive', true).setData('hp', 20);
-                trueBoss.setDisplaySize(170, 100); 
-                trueBoss.setTint(0x222222); 
+                trueBoss = scene.physics.add.sprite(2900, 150, 'iceDragonImg').setCollideWorldBounds(true).setData('isAlive', true).setData('hp', 20);
+                trueBoss.setDisplaySize(180, 120); 
+                trueBoss.setTint(0x333333); 
                 trueBoss.body.allowGravity = false; 
                 scene.tweens.add({ targets: trueBoss, y: trueBoss.y - 30, duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
                 dragonCoinsGroup.create(2500, 470, 'dragonCoinTex').setBounce(0.5).setCollideWorldBounds(true);
