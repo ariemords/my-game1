@@ -619,8 +619,10 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
                     levelTransitioning = true;
                     if (taskState.noDamageRun) taskState.completed[3] = true;
                     updateTaskOverlay();
-                    scene.time.delayedCall(100, () => { levelTransitioning = false; });
-                    setupLevel(scene, currentLevel + 1);
+                    scene.time.delayedCall(50, () => {
+                        setupLevel(scene, currentLevel + 1);
+                        levelTransitioning = false;
+                    });
                 }
             }));
             activeColliders.push(scene.physics.add.overlap(player, deathGhost, (p, g) => { takeDamage(scene); g.x = 3000; g.y = 100; }));
