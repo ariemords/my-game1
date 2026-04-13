@@ -492,7 +492,8 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
 
         function setupLevel(scene, level) {
             levelTransitioning = false;
-            currentLevel = level; scene.physics.world.timeScale = 1; reverseControls = false; gravityFlipped = false; isTiny = false; bombActive = false; bombText.setVisible(false); superJumpActive = false; canJumpTroll = true; currentSpeed = 250;
+            currentLevel = level; levelTransitioning = false; goalReached = false;
+            scene.physics.world.timeScale = 1; reverseControls = false; gravityFlipped = false; isTiny = false; bombActive = false; bombText.setVisible(false); superJumpActive = false; canJumpTroll = true; currentSpeed = 250;
             dashSpeed = permanentUpgrades.longDash ? 1600 : 1000;
             health = permanentUpgrades.extraLife ? 4 : 3;
             if(levelText) levelText.setText('שלב: ' + level);
@@ -526,7 +527,14 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
             } 
             else if (level === 5) { scene.cameras.main.setBackgroundColor('#110022'); for (let x = 0; x < 3200; x += 800) lava.create(x, 590, 'lavaTex'); ground.create(200, 580, 'groundTex'); }
 
-            if (level < 5) goals.create(3100, 520, 'goalTex');
+            if (level < 5) {
+                let goalX = 3000;
+                if (level === 3) goalX = 3100;
+                let goal = goals.create(goalX, 520, 'goalTex');
+                goal.setScale(1.1);
+                goal.body.setSize(48, 80);
+                goal.body.setOffset(-8, -8);
+            }
             if (level === 2) fakeGoal = scene.physics.add.staticSprite(1600, 520, 'goalTex').setTint(0xFFDDDD);
 
             if (!player) {
