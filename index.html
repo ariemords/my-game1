@@ -861,7 +861,7 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
                 if(currentLevel === 3) {
                     centerText.setText('הבסת את הדרקון! מתקדם...').setVisible(true);
                     pendingLevelAdvance = 4;
-                    this.time.delayedCall(2000, () => {
+                    scene.time.delayedCall(2000, () => {
                         centerText.setVisible(false);
                     });
                 }
