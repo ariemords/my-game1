@@ -624,8 +624,7 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
 
             activeColliders.push(scene.physics.add.collider(player, iceGround, () => { if (Math.abs(player.body.velocity.x) > 10) player.setAccelerationX(player.body.velocity.x * 2); else player.setAccelerationX(0); }));
             activeColliders.push(scene.physics.add.overlap(player, goals, () => {
-                if (currentLevel < 5 && !levelTransitioning) {
-                    levelTransitioning = true;
+                if (currentLevel < 5 && !goalReached) {
                     goalReached = true;
                     if (taskState.noDamageRun) taskState.completed[3] = true;
                     updateTaskOverlay();
