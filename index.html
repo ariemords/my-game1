@@ -61,6 +61,7 @@
         let permanentUpgrades = { extraLife: false, longDash: false, shopDiscount: false };
         let activeColliders = [];
         let levelTransitioning = false;
+        let goalReached = false;
         let isPermanentShopOpen = false;
         let gameActiveBeforePermanentShop = false;
         let shopItemTexts = [];
@@ -617,12 +618,9 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
             activeColliders.push(scene.physics.add.overlap(player, goals, () => {
                 if (currentLevel < 5 && !levelTransitioning) {
                     levelTransitioning = true;
+                    goalReached = true;
                     if (taskState.noDamageRun) taskState.completed[3] = true;
                     updateTaskOverlay();
-                    scene.time.delayedCall(50, () => {
-                        setupLevel(scene, currentLevel + 1);
-                        levelTransitioning = false;
-                    });
                 }
             }));
             activeColliders.push(scene.physics.add.overlap(player, deathGhost, (p, g) => { takeDamage(scene); g.x = 3000; g.y = 100; }));
@@ -692,6 +690,15 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
         }
 
         function update(time) {
+            if (goalReached && !levelTransitioning) {
+                goalReached = false;
+                levelTransitioning = true;
+                this.time.delayedCall(10, () => {
+                    setupLevel(this, currentLevel + 1);
+                    levelTransitioning = false;
+                });
+            }
+
             if (!gameActive && !isShopOpen) return; // לא לבצע כשהחנות פתוחה
 
             if(deathGhost && deathGhost.active) { this.physics.moveToObject(deathGhost, player, 60); }
