@@ -79,6 +79,7 @@
 
         function createTextures(scene) {
             let g = scene.make.graphics({ x: 0, y: 0, add: false });
+            g.fillStyle(0x111111); g.fillRect(10, 8, 12, 24); g.fillStyle(0x222222); g.fillRect(4, 16, 24, 24); g.fillStyle(0x444444); g.fillRect(6, 0, 20, 18); g.fillStyle(0xAAAAAA); g.fillCircle(16, 14, 6); g.fillStyle(0x000000); g.fillCircle(13, 14, 2); g.fillCircle(19, 14, 2); g.fillStyle(0x8B4513); g.fillRect(2, 24, 6, 28); g.fillStyle(0xFFD700); g.fillCircle(5, 24, 4); g.generateTexture('playerWizardTex', 32, 56); g.clear();
             g.fillStyle(0x555555); g.fillRect(4, 0, 24, 8); g.fillStyle(0x777777); g.fillRect(0, 8, 32, 16); g.fillStyle(0x333333); g.fillRect(8, 12, 16, 8); g.fillStyle(0x00FF00); g.fillRect(12, 14, 2, 2); g.fillRect(18, 14, 2, 2); g.fillStyle(0x444444); g.fillRect(4, 24, 8, 8); g.fillRect(20, 24, 8, 8); g.generateTexture('playerTex', 32, 32); g.clear();
             g.fillStyle(0x800080, 0.9); g.fillCircle(16, 16, 14); g.fillStyle(0xFFFFFF); g.fillCircle(12, 14, 4); g.fillCircle(20, 14, 4); g.fillStyle(0x000000); g.fillCircle(12, 14, 2); g.fillCircle(20, 14, 2); g.generateTexture('enemyTex', 32, 32); g.clear();
             g.fillStyle(0xFF0000, 0.9); g.fillCircle(16, 16, 14); g.fillStyle(0xFFFFFF); g.fillCircle(12, 14, 4); g.fillCircle(20, 14, 4); g.fillStyle(0x000000); g.fillRect(10, 12, 12, 4); g.generateTexture('thiefTex', 32, 32); g.clear();
@@ -104,6 +105,8 @@
             g.fillStyle(0xFFFF00); g.fillCircle(6, 6, 6); g.generateTexture('petTex', 12, 12); g.clear();
             g.fillStyle(0x555555); g.fillRect(0, 0, 20, 10); g.fillStyle(0xFF0000); g.fillRect(20, 2, 6, 6); g.generateTexture('missileTex', 26, 10); g.clear();
             g.fillStyle(0x00FFFF); g.moveTo(8,0); g.lineTo(16,32); g.lineTo(0,32); g.fill(); g.generateTexture('spikeTex', 16, 32); g.clear();
+            g.fillStyle(0x222222); g.fillTriangle(0, 10, 40, 0, 40, 20); g.fillStyle(0x444444); g.fillTriangle(0, 10, 30, 6, 35, 14); g.generateTexture('dragonWingTex', 40, 20); g.clear();
+            g.fillStyle(0xFF0000); g.fillRect(0, 0, 18, 8); g.generateTexture('dragonMouthTex', 18, 8); g.clear();
             g.fillStyle(0x00FF00); g.fillCircle(12,12,12); g.generateTexture('defuseTex', 24, 24); g.clear();
             g.fillStyle(0x00FFFF); g.moveTo(8,0); g.lineTo(16,8); g.lineTo(8,16); g.lineTo(0,8); g.fill(); g.generateTexture('diamondTex', 16, 16); g.clear();
             g.fillStyle(0x0000FF, 0.5); g.fillCircle(16,16,16); g.lineStyle(2, 0xFFFFFF); g.strokeCircle(16,16,16); g.generateTexture('portalTex', 32, 32); g.clear();
@@ -508,11 +511,11 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
             if (level === 2) fakeGoal = scene.physics.add.staticSprite(1600, 520, 'goalTex').setTint(0xFFDDDD);
 
             if (!player) {
-                player = scene.physics.add.sprite(100, 450, 'playerTex').setBounce(0.1).setCollideWorldBounds(true).setDepth(50);
+                player = scene.physics.add.sprite(100, 450, 'playerWizardTex').setBounce(0.1).setCollideWorldBounds(true).setDepth(50).setScale(1.1);
                 scene.cameras.main.startFollow(player, true, 0.05, 0.05);
                 bubbleShield = scene.add.image(0, 0, 'bubbleTex').setAlpha(0).setDepth(51);
                 pet = scene.add.image(100, 400, 'petTex').setDepth(52); 
-            } else { player.x = 100; player.y = 450; player.setVelocity(0); player.clearTint(); player.setScale(1); }
+            } else { player.x = 100; player.y = 450; player.setVelocity(0); player.clearTint(); player.setScale(1.1); }
 
             deathGhost = scene.physics.add.sprite(3000, 100, 'ghostTex').setAlpha(0.8).setDepth(60); deathGhost.body.allowGravity = false;
 
@@ -535,6 +538,10 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
                 
                 boss = scene.physics.add.sprite(2900, 350, 'iceDragonImg').setBounce(0.2).setCollideWorldBounds(true).setData('isAlive', true).setData('hp', 10);
                 boss.setDisplaySize(160, 100);
+                boss.wing = scene.add.image(boss.x - 40, boss.y - 10, 'dragonWingTex').setOrigin(0.5).setDepth(49);
+                boss.mouth = scene.add.image(boss.x + 30, boss.y + 10, 'dragonMouthTex').setOrigin(0.5).setDepth(51);
+                scene.tweens.add({ targets: boss.wing, angle: { from: -35, to: 35 }, duration: 420, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+                scene.tweens.add({ targets: boss.mouth, scaleY: { from: 0.8, to: 1.4 }, duration: 300, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
                 scene.physics.add.collider(boss, ground);
                 scene.tweens.add({ targets: boss, y: boss.y - 20, duration: 1500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
                 dragonCoinsGroup.create(2600, 500, 'dragonCoinTex').setBounce(0.5).setCollideWorldBounds(true);
@@ -551,9 +558,13 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
             } else if (level === 5) {
                 [600, 1200, 1800, 2400].forEach((x) => { let p = platforms.create(x, 400, 'platTex'); p.body.checkCollision.down = false; });
                 
-                    trueBoss = scene.physics.add.sprite(2900, 150, 'stage5DragonImg').setCollideWorldBounds(true).setData('isAlive', true).setData('hp', 20);
+                trueBoss = scene.physics.add.sprite(2900, 150, 'stage5DragonImg').setCollideWorldBounds(true).setData('isAlive', true).setData('hp', 20);
                 trueBoss.setDisplaySize(220, 140);
                 trueBoss.body.allowGravity = false;
+                trueBoss.wing = scene.add.image(trueBoss.x - 45, trueBoss.y - 10, 'dragonWingTex').setOrigin(0.5).setDepth(99);
+                trueBoss.mouth = scene.add.image(trueBoss.x + 45, trueBoss.y + 20, 'dragonMouthTex').setOrigin(0.5).setDepth(101);
+                scene.tweens.add({ targets: trueBoss.wing, angle: { from: -35, to: 35 }, duration: 420, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+                scene.tweens.add({ targets: trueBoss.mouth, scaleY: { from: 0.8, to: 1.4 }, duration: 300, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
                 scene.tweens.add({ targets: trueBoss, y: trueBoss.y - 30, duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
                 dragonCoinsGroup.create(2500, 470, 'dragonCoinTex').setBounce(0.5).setCollideWorldBounds(true);
                 
@@ -729,8 +740,36 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
             if(time % 30000 < 50) { bubbleShield.setAlpha(1); isInvincible = true; this.time.delayedCall(1000, () => { bubbleShield.setAlpha(0); isInvincible = false; }); }
             bubbleShield.x = player.x; bubbleShield.y = player.y;
 
-            if (currentLevel === 3 && boss && boss.getData('isAlive')) { bossTalk.setPosition(boss.x, boss.y - 80); if (player.x > 2200) bossHealthText.setText('הדרקון: ' + boss.getData('hp') + '/10'); else bossHealthText.setText(''); }
-            else if (currentLevel === 5 && trueBoss && trueBoss.getData('isAlive')) { bossTalk.setPosition(trueBoss.x, trueBoss.y - 80); if (player.x > 2000) bossHealthText.setText('שד הריק: ' + trueBoss.getData('hp') + '/20'); else bossHealthText.setText(''); } 
+            if (currentLevel === 3 && boss && boss.getData('isAlive')) {
+                boss.setFlipX(player.x < boss.x);
+                if (boss.wing) {
+                    boss.wing.setFlipX(boss.flipX);
+                    boss.wing.x = boss.x + (boss.flipX ? 40 : -40);
+                    boss.wing.y = boss.y - 10;
+                }
+                if (boss.mouth) {
+                    boss.mouth.setFlipX(boss.flipX);
+                    boss.mouth.x = boss.x + (boss.flipX ? 30 : -30);
+                    boss.mouth.y = boss.y + 10;
+                }
+                bossTalk.setPosition(boss.x, boss.y - 80);
+                if (player.x > 2200) bossHealthText.setText('הדרקון: ' + boss.getData('hp') + '/10'); else bossHealthText.setText('');
+            }
+            else if (currentLevel === 5 && trueBoss && trueBoss.getData('isAlive')) {
+                trueBoss.setFlipX(player.x < trueBoss.x);
+                if (trueBoss.wing) {
+                    trueBoss.wing.setFlipX(trueBoss.flipX);
+                    trueBoss.wing.x = trueBoss.x + (trueBoss.flipX ? 45 : -45);
+                    trueBoss.wing.y = trueBoss.y - 10;
+                }
+                if (trueBoss.mouth) {
+                    trueBoss.mouth.setFlipX(trueBoss.flipX);
+                    trueBoss.mouth.x = trueBoss.x + (trueBoss.flipX ? 40 : -40);
+                    trueBoss.mouth.y = trueBoss.y + 20;
+                }
+                bossTalk.setPosition(trueBoss.x, trueBoss.y - 80);
+                if (player.x > 2000) bossHealthText.setText('שד הריק: ' + trueBoss.getData('hp') + '/20'); else bossHealthText.setText('');
+            } 
             else bossHealthText.setText('');
 
             if (player.y > 600 || player.y < -100) { if(currentLevel !== 3 && currentLevel !== 5) { takeDamage(this); player.x = 100; player.y = 100; player.setVelocity(0); } }
@@ -748,7 +787,10 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
             
             if (hp <= 5 && !bTarget.getData('enraged')) bTarget.setData('enraged', true);
             if (hp <= 0) { 
-                bTarget.setData('isAlive', false); explodeParticles(scene, bTarget.x, bTarget.y, 0xFF0000, 50); bTarget.destroy(); 
+                bTarget.setData('isAlive', false); explodeParticles(scene, bTarget.x, bTarget.y, 0xFF0000, 50); 
+                if (bTarget.wing) bTarget.wing.destroy();
+                if (bTarget.mouth) bTarget.mouth.destroy();
+                bTarget.destroy(); 
                 if (taskState.noDamageRun) { taskState.completed[3] = true; updateTaskOverlay(); }
                 if(currentLevel === 3) { centerText.setText('הבסת את הדרקון! מתקדם...').setVisible(true); scene.time.delayedCall(2000, () => { centerText.setVisible(false); setupLevel(scene, 4); }); }
                 else { gameActive = false; centerText.setText('ניצחת את המשחק לחלוטין!!!').setVisible(true).setFill('#00FF00'); scene.cameras.main.zoomTo(2, 2000); }
