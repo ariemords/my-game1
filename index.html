@@ -60,7 +60,6 @@
         let dashSpeed = 1000;
         let permanentUpgrades = { extraLife: false, longDash: false, shopDiscount: false };
         let activeColliders = [];
-        let pendingLevelAdvance = 0;
         let levelTransitioning = false;
         let isPermanentShopOpen = false;
         let gameActiveBeforePermanentShop = false;
@@ -491,7 +490,6 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
         // ---------------------------------------------
 
         function setupLevel(scene, level) {
-            pendingLevelAdvance = 0;
             levelTransitioning = false;
             currentLevel = level;
             scene.physics.world.timeScale = 1; reverseControls = false; gravityFlipped = false; isTiny = false; bombActive = false; bombText.setVisible(false); superJumpActive = false; canJumpTroll = true; currentSpeed = 250;
@@ -532,9 +530,8 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
                 let goalX = 3000;
                 if (level === 3) goalX = 3100;
                 let goal = goals.create(goalX, 520, 'goalTex');
-                goal.setScale(1.1);
-                goal.body.setSize(48, 80);
-                goal.body.setOffset(-8, -8);
+                goal.setDisplaySize(44, 88);
+                goal.refreshBody();
             }
             if (level === 2) fakeGoal = scene.physics.add.staticSprite(1600, 520, 'goalTex').setTint(0xFFDDDD);
 
@@ -625,10 +622,13 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
 
             activeColliders.push(scene.physics.add.collider(player, iceGround, () => { if (Math.abs(player.body.velocity.x) > 10) player.setAccelerationX(player.body.velocity.x * 2); else player.setAccelerationX(0); }));
             activeColliders.push(scene.physics.add.overlap(player, goals, () => {
-                if (currentLevel < 5 && !pendingLevelAdvance) {
-                    pendingLevelAdvance = currentLevel + 1;
+                if (currentLevel < 5 && !levelTransitioning) {
+                    levelTransitioning = true;
                     if (taskState.noDamageRun) taskState.completed[3] = true;
                     updateTaskOverlay();
+                    scene.time.delayedCall(50, () => {
+                        setupLevel(scene, currentLevel + 1);
+                    });
                 }
             }));
             activeColliders.push(scene.physics.add.overlap(player, deathGhost, (p, g) => { takeDamage(scene); g.x = 3000; g.y = 100; }));
@@ -698,21 +698,6 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
         }
 
         function update(time) {
-            if (pendingLevelAdvance && !levelTransitioning) {
-                const nextLevel = pendingLevelAdvance;
-                pendingLevelAdvance = 0;
-                levelTransitioning = true;
-                if (currentScene && currentScene.time) {
-                    currentScene.time.delayedCall(10, () => {
-                        setupLevel(currentScene, nextLevel);
-                        levelTransitioning = false;
-                    });
-                } else {
-                    setupLevel(this, nextLevel);
-                    levelTransitioning = false;
-                }
-            }
-
             if (!gameActive && !isShopOpen) return; // לא לבצע כשהחנות פתוחה
 
             if(deathGhost && deathGhost.active) { this.physics.moveToObject(deathGhost, player, 60); }
@@ -870,9 +855,9 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
                 }
                 if(currentLevel === 3) {
                     centerText.setText('הבסת את הדרקון! מתקדם...').setVisible(true);
-                    pendingLevelAdvance = 4;
-                    currentScene.time.delayedCall(2000, () => {
+                    scene.time.delayedCall(2000, () => {
                         centerText.setVisible(false);
+                        setupLevel(scene, 4);
                     });
                 } else {
                     gameActive = false; playVictorySequence(scene);
