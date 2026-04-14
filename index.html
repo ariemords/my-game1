@@ -45,8 +45,8 @@
             this.load.image('homeBackgroundImg', 'מסך הבית.png');
             this.load.image('iceDragonImg', '818VKX6uLAL.jpg');
             this.load.image('stage5DragonImg', 'Gemini_Generated_Image_b1yyxab1yyxab1yy.png');
-            this.load.video('stage5BossVideo', 'video.mp4', 'loadeddata', false, true);
-            this.load.video('victoryVideo', 'PixVerse_V6_Image_Text_720P_תן_לי_סרטון_אנימצי.mp4', 'loadeddata', false, true);
+            this.load.video('stage5BossVideo', encodeURI('video.mp4'), 'loadeddata', false, true);
+            this.load.video('victoryVideo', encodeURI('PixVerse_V6_Image_Text_720P_תן_לי_סרטון_אנימצי.mp4'), 'loadeddata', false, true);
         }
 
         const config = { type: Phaser.AUTO, width: 800, height: 600, parent: 'game-container', physics: { default: 'arcade', arcade: { gravity: { y: 1000 }, debug: false } }, scene: { preload: preload, create: create, update: update } };
@@ -603,15 +603,35 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
             } else if (level === 5) {
                 [600, 1200, 1800, 2400].forEach((x) => { let p = platforms.create(x, 400, 'platTex'); p.body.checkCollision.down = false; });
                 
-                trueBoss = scene.physics.add.sprite(2900, 150, 'stage5DragonImg').setCollideWorldBounds(true).setData('isAlive', true).setData('hp', 20).setVisible(true);
+                trueBoss = scene.physics.add.sprite(2900, 150, 'stage5DragonImg').setCollideWorldBounds(true).setData('isAlive', true).setData('hp', 20).setVisible(false);
                 trueBoss.setDisplaySize(220, 140);
                 trueBoss.body.allowGravity = false;
                 trueBoss.body.setSize(220, 140, true);
                 trueBoss.setTint(0xFFFFFF);
-                trueBoss.wing = scene.add.image(trueBoss.x - 45, trueBoss.y - 10, 'dragonWingTex').setOrigin(0.5).setDepth(99);
-                trueBoss.mouth = scene.add.image(trueBoss.x + 45, trueBoss.y + 20, 'dragonMouthTex').setOrigin(0.5).setDepth(101);
-                scene.tweens.add({ targets: trueBoss.wing, angle: { from: -35, to: 35 }, duration: 420, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-                scene.tweens.add({ targets: trueBoss.mouth, scaleY: { from: 0.8, to: 1.4 }, duration: 300, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+
+                let bossVideoVisible = false;
+                trueBossVideo = scene.add.video(trueBoss.x, trueBoss.y, 'stage5BossVideo').setOrigin(0.5).setDisplaySize(220, 140).setDepth(98).setVisible(false);
+                if (trueBossVideo) {
+                    try {
+                        if (trueBossVideo.play) trueBossVideo.play(false);
+                        if (trueBossVideo.setLoop) trueBossVideo.setLoop(true);
+                        trueBossVideo.setVisible(true);
+                        bossVideoVisible = true;
+                    } catch (e) {
+                        console.warn('Failed to play stage5BossVideo:', e);
+                        trueBossVideo.destroy();
+                        trueBossVideo = null;
+                    }
+                }
+
+                if (!bossVideoVisible) {
+                    trueBoss.setVisible(true);
+                    trueBoss.wing = scene.add.image(trueBoss.x - 45, trueBoss.y - 10, 'dragonWingTex').setOrigin(0.5).setDepth(99);
+                    trueBoss.mouth = scene.add.image(trueBoss.x + 45, trueBoss.y + 20, 'dragonMouthTex').setOrigin(0.5).setDepth(101);
+                    scene.tweens.add({ targets: trueBoss.wing, angle: { from: -35, to: 35 }, duration: 420, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+                    scene.tweens.add({ targets: trueBoss.mouth, scaleY: { from: 0.8, to: 1.4 }, duration: 300, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+                }
+
                 scene.tweens.add({ targets: trueBoss, y: trueBoss.y - 30, duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
                 dragonCoinsGroup.create(2500, 470, 'dragonCoinTex').setBounce(0.5).setCollideWorldBounds(true);
                 
@@ -816,6 +836,10 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
             }
             else if (currentLevel === 5 && trueBoss && trueBoss.getData('isAlive')) {
                 trueBoss.setFlipX(player.x < trueBoss.x);
+                if (trueBossVideo) {
+                    if (trueBossVideo.setFlipX) trueBossVideo.setFlipX(trueBoss.flipX);
+                    if (trueBossVideo.setPosition) trueBossVideo.setPosition(trueBoss.x, trueBoss.y);
+                }
                 if (trueBoss.wing) {
                     trueBoss.wing.setFlipX(trueBoss.flipX);
                     trueBoss.wing.x = trueBoss.x + (trueBoss.flipX ? 45 : -45);
@@ -855,6 +879,7 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
                 if (taskState.noDamageRun) { taskState.completed[3] = true; updateTaskOverlay(); }
                 if (bTarget === boss) { boss = null; }
                 if (bTarget === trueBoss) {
+                    if (trueBossVideo) { trueBossVideo.destroy(); trueBossVideo = null; }
                     trueBoss = null;
                 }
                 if(currentLevel === 3) {
@@ -877,25 +902,44 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
             if (bossHealthText) bossHealthText.setText('');
             scene.physics.world.pause();
             victoryOverlay = scene.add.rectangle(400, 300, 800, 600, 0x000000, 0.8).setScrollFactor(0).setDepth(1200);
+            let videoPlayed = false;
             try {
                 victoryVideo = scene.add.video(400, 300, 'victoryVideo').setOrigin(0.5).setDisplaySize(760, 430).setDepth(1201);
                 if (victoryVideo) {
-                    if (victoryVideo.play) victoryVideo.play();
+                    if (victoryVideo.setLoop) victoryVideo.setLoop(true);
+                    if (victoryVideo.setMute) victoryVideo.setMute(true);
+                    if (victoryVideo.play) {
+                        const result = victoryVideo.play();
+                        if (result && result.catch) {
+                            result.catch((e) => {
+                                console.warn('Victory video play promise rejected:', e);
+                                if (victoryVideo) {
+                                    victoryVideo.destroy();
+                                    victoryVideo = null;
+                                }
+                            });
+                        }
+                        videoPlayed = true;
+                    }
                 }
             } catch (e) {
                 console.warn('Failed to create or play victoryVideo:', e);
                 victoryVideo = null;
             }
             victoryText = scene.add.text(400, 540, 'נצחת את הדרקון הנורא!', { fontSize: '32px', fill: '#00FF00', fontStyle: 'bold', align: 'center', wordWrap: { width: 740 } }).setOrigin(0.5).setDepth(1202).setVisible(false);
-            if (victoryVideo && victoryVideo.video) {
-                victoryVideo.video.addEventListener('ended', () => {
-                    if (victoryText) victoryText.setVisible(true);
-                });
-            }
-            if (victoryVideo && victoryVideo.on) {
-                victoryVideo.on('complete', () => {
-                    if (victoryText) victoryText.setVisible(true);
-                });
+            if (!victoryVideo) {
+                if (victoryText) victoryText.setVisible(true);
+            } else {
+                if (victoryVideo.video) {
+                    victoryVideo.video.addEventListener('ended', () => {
+                        if (victoryText) victoryText.setVisible(true);
+                    });
+                }
+                if (victoryVideo.on) {
+                    victoryVideo.on('complete', () => {
+                        if (victoryText) victoryText.setVisible(true);
+                    });
+                }
             }
         }
 
