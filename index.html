@@ -702,10 +702,15 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
                 const nextLevel = pendingLevelAdvance;
                 pendingLevelAdvance = 0;
                 levelTransitioning = true;
-                this.time.delayedCall(10, () => {
+                if (currentScene && currentScene.time) {
+                    currentScene.time.delayedCall(10, () => {
+                        setupLevel(currentScene, nextLevel);
+                        levelTransitioning = false;
+                    });
+                } else {
                     setupLevel(this, nextLevel);
                     levelTransitioning = false;
-                });
+                }
             }
 
             if (!gameActive && !isShopOpen) return; // לא לבצע כשהחנות פתוחה
@@ -858,14 +863,20 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
                 if (bTarget === trueBoss && trueBossVideo) { trueBossVideo.destroy(); trueBossVideo = null; }
                 bTarget.destroy(); 
                 if (taskState.noDamageRun) { taskState.completed[3] = true; updateTaskOverlay(); }
+                if (bTarget === boss) { boss = null; }
+                if (bTarget === trueBoss) {
+                    if (trueBossVideo) { trueBossVideo.destroy(); trueBossVideo = null; }
+                    trueBoss = null;
+                }
                 if(currentLevel === 3) {
                     centerText.setText('הבסת את הדרקון! מתקדם...').setVisible(true);
                     pendingLevelAdvance = 4;
-                    scene.time.delayedCall(2000, () => {
+                    currentScene.time.delayedCall(2000, () => {
                         centerText.setVisible(false);
                     });
+                } else {
+                    gameActive = false; playVictorySequence(scene);
                 }
-                else { gameActive = false; playVictorySequence(scene); }
             }
         }
         
