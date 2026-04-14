@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Platformer Ultimate - THE MECHANICAL DRAGON</title>
     <link rel="shortcut icon" href="data:image/x-icon;," type="image/x-icon">
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js" crossorigin="anonymous"></script>
     <style>
         body { margin: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; color: white; font-family: Arial, sans-serif; }
         #game-container { box-shadow: 0 0 30px rgba(0,0,0,0.8); border-radius: 10px; overflow: hidden; position: relative; }
@@ -79,6 +79,7 @@
         // --------------------------------
 
         let scoreText, healthText, bossHealthText, centerText, levelText, bombText, bossTalk;
+        let dragonCoinText, permUpgradesText;
         let pet, bubbleShield, fogOverlay;
         let playerWing, playerMouth;
 
@@ -99,6 +100,7 @@
             g.fillStyle(0xFFD700); g.fillRect(0, 0, 32, 64); g.generateTexture('goalTex', 32, 64); g.clear();
             g.fillStyle(0xFFFF00); g.fillCircle(8, 8, 8); g.generateTexture('coinTex', 16, 16); g.clear();
             g.fillStyle(0x00FFFF); g.fillCircle(8, 8, 8); g.generateTexture('iceTex', 16, 16); g.clear();
+            g.fillStyle(0xFF00FF); g.fillCircle(8, 8, 8); g.generateTexture('powerTex', 16, 16); g.clear();
             g.fillStyle(0xFFFFFF, 0.4); g.fillCircle(16, 16, 16); g.generateTexture('bubbleTex', 32, 32); g.clear();
             g.fillStyle(0xFF4500); g.fillRect(0, 0, 800, 40); g.generateTexture('lavaTex', 800, 40); g.clear();
             g.fillStyle(0xFF0000); g.fillRect(0, 0, 10, 600); g.generateTexture('laserTex', 10, 600); g.clear();
