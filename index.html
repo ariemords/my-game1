@@ -5,7 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Platformer Ultimate - THE MECHANICAL DRAGON</title>
     <link rel="shortcut icon" href="data:image/x-icon;," type="image/x-icon">
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js" crossorigin="anonymous"></script>
+    <script>
+        window.onerror = function(msg, url, line, column, error) {
+            let errDiv = document.getElementById('error-msg');
+            if (!errDiv) return false;
+            errDiv.style.display = 'block';
+            let text = "שגיאה:<br>" + msg + "<br>Line: " + line + ", Column: " + column;
+            if (error && error.stack) {
+                text += "<br>Stack:<br>" + error.stack.replace(/\n/g, '<br>');
+            }
+            if (url) {
+                text += "<br>Script: " + url;
+            }
+            errDiv.innerHTML = text;
+            return false;
+        };
+
+        window.addEventListener('unhandledrejection', function(event) {
+            let errDiv = document.getElementById('error-msg');
+            if (!errDiv) return;
+            errDiv.style.display = 'block';
+            let reason = event.reason;
+            let text = "Unhandled rejection:<br>" + (reason && reason.message ? reason.message : reason);
+            if (reason && reason.stack) {
+                text += "<br>Stack:<br>" + reason.stack.replace(/\n/g, '<br>');
+            }
+            errDiv.innerHTML = text;
+            event.preventDefault();
+        });
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.60.0/phaser.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <style>
         body { margin: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; color: white; font-family: Arial, sans-serif; }
         #game-container { box-shadow: 0 0 30px rgba(0,0,0,0.8); border-radius: 10px; overflow: hidden; position: relative; }
@@ -57,8 +86,7 @@
             this.load.image('homeBackgroundImg', 'מסך הבית.png');
             this.load.image('iceDragonImg', '818VKX6uLAL.jpg');
             this.load.image('stage5DragonImg', 'Gemini_Generated_Image_b1yyxab1yyxab1yy.png');
-            this.load.video('stage5BossVideo', 'video.mp4', 'loadeddata', false, true);
-            this.load.video('victoryVideo', 'PixVerse_V6_Image_Text_720P_תן_לי_סרטון_אנימצי.mp4', 'loadeddata', false, true);
+            this.load.video('victoryVideo', './PixVerse_V6_Image_Text_720P_תן_לי_סרטון_אנימצי.mp4', 'loadeddata', false, true);
         }
 
         const config = { type: Phaser.AUTO, width: 800, height: 600, parent: 'game-container', physics: { default: 'arcade', arcade: { gravity: { y: 1000 }, debug: false } }, scene: { preload: preload, create: create, update: update } };
@@ -162,6 +190,17 @@
         }
 
         function explodeParticles(scene, x, y, color, qty = 15) { let emitter = scene.add.particles(x, y, 'particleTex', { speed: { min: -150, max: 150 }, angle: { min: 0, max: 360 }, scale: { start: 1, end: 0 }, tint: color, lifespan: 600, gravityY: 300, quantity: qty, emitting: false }); emitter.explode(); }
+
+        function showError(err) {
+            let errDiv = document.getElementById('error-msg');
+            if (!errDiv) return;
+            errDiv.style.display = 'block';
+            if (err instanceof Error) {
+                errDiv.innerHTML = "שגיאה:<br>" + err.message + "<br>Stack:<br>" + err.stack.replace(/\n/g, '<br>');
+            } else {
+                errDiv.innerHTML = "שגיאה: " + err;
+            }
+        }
 
         function toggleHelpOverlay(visible) {
             if (!helpOverlay) return;
@@ -621,36 +660,10 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
                 trueBoss.body.setSize(220, 140, true);
                 trueBoss.setTint(0xFFFFFF);
 
-                let bossVideoVisible = false;
-                trueBossVideo = scene.add.video(trueBoss.x, trueBoss.y, 'stage5BossVideo').setOrigin(0.5).setDisplaySize(220, 140).setDepth(95).setVisible(false);
-                if (trueBossVideo) {
-                    try {
-                        if (trueBossVideo.setLoop) trueBossVideo.setLoop(false);
-                        if (trueBossVideo.play) {
-                            const result = trueBossVideo.play();
-                            if (result && result.catch) {
-                                result.catch((e) => {
-                                    console.warn('Stage 5 boss video play promise rejected:', e);
-                                    if (trueBossVideo) { trueBossVideo.destroy(); trueBossVideo = null; }
-                                });
-                                bossVideoVisible = true;
-                            } else {
-                                bossVideoVisible = true;
-                            }
-                        }
-                        trueBossVideo.setVisible(true);
-                    } catch (e) {
-                        console.warn('Failed to play stage5BossVideo:', e);
-                        if (trueBossVideo) { trueBossVideo.destroy(); trueBossVideo = null; }
-                    }
-                }
-
-                if (!bossVideoVisible) {
-                    trueBoss.wing = scene.add.image(trueBoss.x - 45, trueBoss.y - 10, 'dragonWingTex').setOrigin(0.5).setDepth(99);
-                    trueBoss.mouth = scene.add.image(trueBoss.x + 45, trueBoss.y + 20, 'dragonMouthTex').setOrigin(0.5).setDepth(101);
-                    scene.tweens.add({ targets: trueBoss.wing, angle: { from: -35, to: 35 }, duration: 420, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-                    scene.tweens.add({ targets: trueBoss.mouth, scaleY: { from: 0.8, to: 1.4 }, duration: 300, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-                }
+                trueBoss.wing = scene.add.image(trueBoss.x - 45, trueBoss.y - 10, 'dragonWingTex').setOrigin(0.5).setDepth(99);
+                trueBoss.mouth = scene.add.image(trueBoss.x + 45, trueBoss.y + 20, 'dragonMouthTex').setOrigin(0.5).setDepth(101);
+                scene.tweens.add({ targets: trueBoss.wing, angle: { from: -35, to: 35 }, duration: 420, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+                scene.tweens.add({ targets: trueBoss.mouth, scaleY: { from: 0.8, to: 1.4 }, duration: 300, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
 
                 scene.tweens.add({ targets: trueBoss, y: trueBoss.y - 30, duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
                 dragonCoinsGroup.create(2500, 470, 'dragonCoinTex').setBounce(0.5).setCollideWorldBounds(true);
@@ -677,7 +690,11 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
                     if (taskState.noDamageRun) taskState.completed[3] = true;
                     updateTaskOverlay();
                     scene.time.delayedCall(50, () => {
-                        setupLevel(scene, currentLevel + 1);
+                        try {
+                            setupLevel(scene, currentLevel + 1);
+                        } catch (err) {
+                            showError(err);
+                        }
                     });
                 }
             }));
