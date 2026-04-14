@@ -28,6 +28,18 @@
             return false;
         };
 
+        window.addEventListener('unhandledrejection', function(event) {
+            let errDiv = document.getElementById('error-msg');
+            errDiv.style.display = 'block';
+            let reason = event.reason;
+            let text = "Unhandled rejection:<br>" + (reason && reason.message ? reason.message : reason);
+            if (reason && reason.stack) {
+                text += "<br>Stack:<br>" + reason.stack.replace(/\n/g, '<br>');
+            }
+            errDiv.innerHTML = text;
+            event.preventDefault();
+        });
+
         const SoundEngine = {
             ctx: null,
             init() { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); if (this.ctx.state === 'suspended') this.ctx.resume(); },
@@ -45,8 +57,8 @@
             this.load.image('homeBackgroundImg', 'מסך הבית.png');
             this.load.image('iceDragonImg', '818VKX6uLAL.jpg');
             this.load.image('stage5DragonImg', 'Gemini_Generated_Image_b1yyxab1yyxab1yy.png');
-            this.load.video('stage5BossVideo', encodeURI('video.mp4'), 'loadeddata', false, true);
-            this.load.video('victoryVideo', encodeURI('PixVerse_V6_Image_Text_720P_תן_לי_סרטון_אנימצי.mp4'), 'loadeddata', false, true);
+            this.load.video('stage5BossVideo', 'video.mp4', 'loadeddata', false, true);
+            this.load.video('victoryVideo', 'PixVerse_V6_Image_Text_720P_תן_לי_סרטון_אנימצי.mp4', 'loadeddata', false, true);
         }
 
         const config = { type: Phaser.AUTO, width: 800, height: 600, parent: 'game-container', physics: { default: 'arcade', arcade: { gravity: { y: 1000 }, debug: false } }, scene: { preload: preload, create: create, update: update } };
@@ -603,29 +615,37 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
             } else if (level === 5) {
                 [600, 1200, 1800, 2400].forEach((x) => { let p = platforms.create(x, 400, 'platTex'); p.body.checkCollision.down = false; });
                 
-                trueBoss = scene.physics.add.sprite(2900, 150, 'stage5DragonImg').setCollideWorldBounds(true).setData('isAlive', true).setData('hp', 20).setVisible(false);
+                trueBoss = scene.physics.add.sprite(2900, 150, 'stage5DragonImg').setCollideWorldBounds(true).setData('isAlive', true).setData('hp', 20).setVisible(true).setDepth(90);
                 trueBoss.setDisplaySize(220, 140);
                 trueBoss.body.allowGravity = false;
                 trueBoss.body.setSize(220, 140, true);
                 trueBoss.setTint(0xFFFFFF);
 
                 let bossVideoVisible = false;
-                trueBossVideo = scene.add.video(trueBoss.x, trueBoss.y, 'stage5BossVideo').setOrigin(0.5).setDisplaySize(220, 140).setDepth(98).setVisible(false);
+                trueBossVideo = scene.add.video(trueBoss.x, trueBoss.y, 'stage5BossVideo').setOrigin(0.5).setDisplaySize(220, 140).setDepth(95).setVisible(false);
                 if (trueBossVideo) {
                     try {
-                        if (trueBossVideo.play) trueBossVideo.play(false);
-                        if (trueBossVideo.setLoop) trueBossVideo.setLoop(true);
+                        if (trueBossVideo.setLoop) trueBossVideo.setLoop(false);
+                        if (trueBossVideo.play) {
+                            const result = trueBossVideo.play();
+                            if (result && result.catch) {
+                                result.catch((e) => {
+                                    console.warn('Stage 5 boss video play promise rejected:', e);
+                                    if (trueBossVideo) { trueBossVideo.destroy(); trueBossVideo = null; }
+                                });
+                                bossVideoVisible = true;
+                            } else {
+                                bossVideoVisible = true;
+                            }
+                        }
                         trueBossVideo.setVisible(true);
-                        bossVideoVisible = true;
                     } catch (e) {
                         console.warn('Failed to play stage5BossVideo:', e);
-                        trueBossVideo.destroy();
-                        trueBossVideo = null;
+                        if (trueBossVideo) { trueBossVideo.destroy(); trueBossVideo = null; }
                     }
                 }
 
                 if (!bossVideoVisible) {
-                    trueBoss.setVisible(true);
                     trueBoss.wing = scene.add.image(trueBoss.x - 45, trueBoss.y - 10, 'dragonWingTex').setOrigin(0.5).setDepth(99);
                     trueBoss.mouth = scene.add.image(trueBoss.x + 45, trueBoss.y + 20, 'dragonMouthTex').setOrigin(0.5).setDepth(101);
                     scene.tweens.add({ targets: trueBoss.wing, angle: { from: -35, to: 35 }, duration: 420, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
@@ -906,7 +926,7 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
             try {
                 victoryVideo = scene.add.video(400, 300, 'victoryVideo').setOrigin(0.5).setDisplaySize(760, 430).setDepth(1201);
                 if (victoryVideo) {
-                    if (victoryVideo.setLoop) victoryVideo.setLoop(true);
+                    if (victoryVideo.setLoop) victoryVideo.setLoop(false);
                     if (victoryVideo.setMute) victoryVideo.setMute(true);
                     if (victoryVideo.play) {
                         const result = victoryVideo.play();
@@ -940,6 +960,11 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
                         if (victoryText) victoryText.setVisible(true);
                     });
                 }
+                scene.time.delayedCall(1500, () => {
+                    if (victoryText && !victoryText.visible) {
+                        victoryText.setVisible(true);
+                    }
+                });
             }
         }
 
