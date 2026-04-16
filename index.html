@@ -640,6 +640,120 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
                         scene.time.delayedCall(10000, () => { superJumpActive = false; });
                         centerText.setText('בחרת: מעוף הדרקון').setVisible(true);
                     }
+                },
+                {
+                    title: 'סערת קרח',
+                    desc: 'משלשל שלושה כדורי קרח חזקים בתחילת השלב',
+                    apply: () => {
+                        ['-1','0','1'].forEach((offset) => {
+                            let ice = iceballs.create(player.x, player.y, 'iceTex');
+                            ice.body.allowGravity = false;
+                            ice.setVelocityX(player.flipX ? -400 : 400);
+                            ice.setVelocityY(parseInt(offset) * -100);
+                        });
+                        centerText.setText('בחרת: סערת קרח').setVisible(true);
+                    }
+                },
+                {
+                    title: 'ערפל מהיר',
+                    desc: 'המשקל יורד והשחקן נע מהר יותר לשלב הבא',
+                    apply: (scene) => {
+                        if (tempUpgradeBackup.gravityY === null) tempUpgradeBackup.gravityY = scene.physics.world.gravity.y;
+                        if (tempUpgradeBackup.currentSpeed === null) tempUpgradeBackup.currentSpeed = currentSpeed;
+                        scene.physics.world.gravity.y = 600;
+                        currentSpeed = 380;
+                        centerText.setText('בחרת: ערפל מהיר').setVisible(true);
+                    }
+                },
+                {
+                    title: 'זריקת ברק',
+                    desc: 'יוצר שלושה פרוייקטילים חשמליים מיד',
+                    apply: () => {
+                        ['-1','0','1'].forEach((offset) => {
+                            let bolt = fireballs.create(player.x, player.y, 'plasmaTex');
+                            bolt.body.allowGravity = false;
+                            bolt.setVelocityX(player.flipX ? -400 : 400);
+                            bolt.setVelocityY(parseInt(offset) * -100);
+                        });
+                        centerText.setText('בחרת: זריקת ברק').setVisible(true);
+                    }
+                },
+                {
+                    title: 'צווארון פלדה',
+                    desc: '+1 חיים לשלב הבא',
+                    apply: () => {
+                        health = Math.min(5, health + 1);
+                        if (healthText) healthText.setText('חיים: ' + health);
+                        centerText.setText('בחרת: צווארון פלדה').setVisible(true);
+                    }
+                },
+                {
+                    title: 'בוסט התחמקות',
+                    desc: 'מהירות התנועה עולה לשלב הבא',
+                    apply: () => {
+                        if (tempUpgradeBackup.currentSpeed === null) tempUpgradeBackup.currentSpeed = currentSpeed;
+                        currentSpeed = 420;
+                        centerText.setText('בחרת: בוסט התחמקות').setVisible(true);
+                    }
+                },
+                {
+                    title: 'כוח קריסטל',
+                    desc: 'הירי הופך לקרח מהיר לשלב הבא',
+                    apply: () => {
+                        if (tempUpgradeBackup.specialWeapon === null) tempUpgradeBackup.specialWeapon = specialWeapon;
+                        if (tempUpgradeBackup.shootDelay === null) tempUpgradeBackup.shootDelay = shootDelay;
+                        specialWeapon = 'ice';
+                        shootDelay = 200;
+                        if (player) player.setTint(0x00FFFF);
+                        centerText.setText('בחרת: כוח קריסטל').setVisible(true);
+                    }
+                },
+                {
+                    title: 'סחרור קרח',
+                    desc: 'ירי של שלושה כדורים בשלב הבא',
+                    apply: () => {
+                        if (tempUpgradeBackup.specialWeapon === null) tempUpgradeBackup.specialWeapon = specialWeapon;
+                        if (tempUpgradeBackup.shootDelay === null) tempUpgradeBackup.shootDelay = shootDelay;
+                        specialWeapon = 'ultimateIce';
+                        shootDelay = 120;
+                        if (player) player.setTint(0x00FFFF);
+                        centerText.setText('בחרת: סחרור קרח').setVisible(true);
+                    }
+                },
+                {
+                    title: 'מטען אדיר',
+                    desc: 'משגר חמש כדורים רחבים בתחילת השלב',
+                    apply: () => {
+                        for (let i = -2; i <= 2; i++) {
+                            let blast = fireballs.create(player.x, player.y, 'powerTex').setTint(0xFF5500);
+                            blast.body.allowGravity = false;
+                            blast.setVelocityX(i * 120);
+                            blast.setVelocityY(-200);
+                        }
+                        centerText.setText('בחרת: מטען אדיר').setVisible(true);
+                    }
+                },
+                {
+                    title: 'התחייבות',
+                    desc: 'מגן בלתי חדיר לשלב הבא',
+                    apply: (scene) => {
+                        if (tempUpgradeBackup.isInvincible === null) tempUpgradeBackup.isInvincible = isInvincible;
+                        isInvincible = true;
+                        if (bubbleShield) bubbleShield.setAlpha(1);
+                        centerText.setText('בחרת: התחייבות').setVisible(true);
+                    }
+                },
+                {
+                    title: 'כופת אש',
+                    desc: 'הירי הופך לאש מהירה לשלב הבא',
+                    apply: () => {
+                        if (tempUpgradeBackup.specialWeapon === null) tempUpgradeBackup.specialWeapon = specialWeapon;
+                        if (tempUpgradeBackup.shootDelay === null) tempUpgradeBackup.shootDelay = shootDelay;
+                        specialWeapon = 'fire';
+                        shootDelay = 120;
+                        if (player) player.setTint(0xFF4500);
+                        centerText.setText('בחרת: כופת אש').setVisible(true);
+                    }
                 }
             ];
 
@@ -879,11 +993,11 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
                 if (playerWing) { playerWing.setPosition(player.x - 12, player.y - 10); }
                 if (playerMouth) { playerMouth.setPosition(player.x + 10, player.y + 8); }
             }
-            if (hasDrone && player) {
+            if (pendingUpgrade) { pendingUpgrade.apply(scene); pendingUpgrade = null; }
+            if (hasDrone && player && (!attackDrone || !attackDrone.active)) {
                 attackDrone = scene.physics.add.sprite(player.x, player.y - 50, 'droneTex').setDepth(55);
                 attackDrone.body.allowGravity = false;
             }
-            if (pendingUpgrade) { pendingUpgrade.apply(scene); pendingUpgrade = null; }
 
             deathGhost = scene.physics.add.sprite(3000, 100, 'ghostTex').setAlpha(0.8).setDepth(60); deathGhost.body.allowGravity = false;
 
