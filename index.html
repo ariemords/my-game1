@@ -114,6 +114,9 @@
         let gameActiveBeforePermanentShop = false;
         let shopItemTexts = [];
         let upgradeShopContainer;
+        let isUpgradeMenuOpen = false, upgradeMenuContainer;
+        let upgradeOptionTexts = [];
+        let currentUpgradeChoices = [];
         let homeMenuContainer, helpOverlay, tasksOverlay, homeMenuActive = true, homeMenuActiveBeforeTasks = false, currentScene;
         let taskButton, tasksActive = false;
         let taskLine1, taskLine2, taskLine3;
@@ -388,12 +391,12 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
             this.input.keyboard.on('keydown-SPACE', () => startGame(this));
             
             // פתיחת חנות
-            this.input.keyboard.on('keydown-N', () => { if(!homeMenuActive) toggleShop(this); });
-            this.input.keyboard.on('keydown-B', () => { if(!homeMenuActive && !gameActive && !isShopOpen) togglePermanentShop(this); });
-            this.input.keyboard.on('keydown-M', () => { if(tasksOverlay && !tasksOverlay.visible && !isShopOpen && !isPermanentShopOpen) openTasksPage(this); });
-            this.input.keyboard.on('keydown-ONE', () => { if(tasksOverlay && tasksOverlay.visible) claimTask(this, 1); });
-            this.input.keyboard.on('keydown-TWO', () => { if(tasksOverlay && tasksOverlay.visible) claimTask(this, 2); });
-            this.input.keyboard.on('keydown-THREE', () => { if(tasksOverlay && tasksOverlay.visible) claimTask(this, 3); });
+            this.input.keyboard.on('keydown-N', () => { if(!homeMenuActive && !isUpgradeMenuOpen) toggleShop(this); });
+            this.input.keyboard.on('keydown-B', () => { if(!homeMenuActive && !gameActive && !isShopOpen && !isUpgradeMenuOpen) togglePermanentShop(this); });
+            this.input.keyboard.on('keydown-M', () => { if(tasksOverlay && !tasksOverlay.visible && !isShopOpen && !isPermanentShopOpen && !isUpgradeMenuOpen) openTasksPage(this); });
+            this.input.keyboard.on('keydown-ONE', () => { if (isUpgradeMenuOpen) pickUpgrade(this, 1); else if(tasksOverlay && tasksOverlay.visible) claimTask(this, 1); });
+            this.input.keyboard.on('keydown-TWO', () => { if (isUpgradeMenuOpen) pickUpgrade(this, 2); else if(tasksOverlay && tasksOverlay.visible) claimTask(this, 2); });
+            this.input.keyboard.on('keydown-THREE', () => { if (isUpgradeMenuOpen) pickUpgrade(this, 3); else if(tasksOverlay && tasksOverlay.visible) claimTask(this, 3); });
 
             this.input.keyboard.on('keydown-R', () => { window.location.reload(); });
 
@@ -402,6 +405,109 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
             updatePermanentUI();
             createShop(this); // יצירת תפריט החנות ברקע
             createPermanentShop(this);
+            createRunUpgradeMenu(this);
+        }
+
+        function createRunUpgradeMenu(scene) {
+            upgradeMenuContainer = scene.add.container(400, 300).setScrollFactor(0).setDepth(1002).setVisible(false);
+            let bg = scene.add.rectangle(0, 0, 520, 520, 0x101820, 0.96).setStrokeStyle(5, 0xFFAA00);
+            let title = scene.add.text(0, -220, 'בחר שדרוג רנדומלי', { fontSize: '30px', fill: '#FFCC00', fontStyle: 'bold' }).setOrigin(0.5);
+            let subtitle = scene.add.text(0, -180, 'לחץ 1/2/3 כדי לבחור אחד מתוך שלושה', { fontSize: '18px', fill: '#CCCCCC' }).setOrigin(0.5);
+            upgradeOptionTexts = [
+                scene.add.text(-220, -110, '1. ...', { fontSize: '20px', fill: '#FFFFFF', wordWrap: { width: 440 } }),
+                scene.add.text(-220, -30, '2. ...', { fontSize: '20px', fill: '#FFFFFF', wordWrap: { width: 440 } }),
+                scene.add.text(-220, 50, '3. ...', { fontSize: '20px', fill: '#FFFFFF', wordWrap: { width: 440 } })
+            ];
+            let hint = scene.add.text(0, 200, 'לחץ על מספר כדי להתחיל את השלב הבא', { fontSize: '20px', fill: '#FFAA00' }).setOrigin(0.5);
+            upgradeMenuContainer.add([bg, title, subtitle, ...upgradeOptionTexts, hint]);
+        }
+
+        function showRunUpgradeMenu(scene) {
+            let allUpgrades = [
+                {
+                    title: '+1 חיים',
+                    desc: 'מוסיף חיים מיידית ויכול להגדיל את המקסימום',
+                    apply: (scene) => {
+                        health = Math.min(5, health + 1);
+                        if (healthText) healthText.setText('חיים: ' + health);
+                        centerText.setText('בחרת: +1 חיים').setVisible(true);
+                    }
+                },
+                {
+                    title: 'ירי מהיר יותר',
+                    desc: 'קצר את זמן הטעינה של הירי לשלב הבא',
+                    apply: () => {
+                        shootDelay = Math.max(100, shootDelay - 150);
+                        centerText.setText('בחרת: ירי מהיר יותר').setVisible(true);
+                    }
+                },
+                {
+                    title: 'מגן בועה',
+                    desc: 'מגן בלתי חדיר למשך 10 שניות',
+                    apply: (scene) => {
+                        isInvincible = true;
+                        if (bubbleShield) bubbleShield.setAlpha(1);
+                        scene.time.delayedCall(10000, () => {
+                            isInvincible = false;
+                            if (bubbleShield) bubbleShield.setAlpha(0);
+                        });
+                        centerText.setText('בחרת: מגן בועה').setVisible(true);
+                    }
+                },
+                {
+                    title: 'רחפן תומך',
+                    desc: 'רחפן יגן עליך ויורה על אויבים',
+                    apply: () => {
+                        hasDrone = true;
+                        centerText.setText('בחרת: רחפן תומך').setVisible(true);
+                    }
+                },
+                {
+                    title: 'ירי אולטימטיבי',
+                    desc: 'שלושה כדורי קרח בבת אחת עם זמן טעינה קצר',
+                    apply: () => {
+                        specialWeapon = 'ultimateIce';
+                        shootDelay = 100;
+                        if (player) player.setTint(0x00FFFF);
+                        centerText.setText('בחרת: ירי אולטימטיבי').setVisible(true);
+                    }
+                },
+                {
+                    title: 'החלמה מלאה',
+                    desc: 'שחזר את בריאותך לשיא',
+                    apply: () => {
+                        health = 5;
+                        if (healthText) healthText.setText('חיים: ' + health);
+                        centerText.setText('בחרת: החלמה מלאה').setVisible(true);
+                    }
+                }
+            ];
+
+            currentUpgradeChoices = Phaser.Utils.Array.Shuffle(allUpgrades).slice(0, 3);
+            currentUpgradeChoices.forEach((choice, index) => {
+                upgradeOptionTexts[index].setText(`${index + 1}. ${choice.title}\n${choice.desc}`);
+            });
+
+            if (upgradeMenuContainer) {
+                upgradeMenuContainer.setVisible(true);
+            }
+            isUpgradeMenuOpen = true;
+            gameActive = false;
+            centerText.setVisible(false);
+            scene.physics.world.pause();
+        }
+
+        function pickUpgrade(scene, index) {
+            if (!isUpgradeMenuOpen || !currentUpgradeChoices[index - 1]) return;
+            let choice = currentUpgradeChoices[index - 1];
+            choice.apply(scene);
+            if (upgradeMenuContainer) {
+                upgradeMenuContainer.setVisible(false);
+            }
+            isUpgradeMenuOpen = false;
+            scene.physics.world.resume();
+            gameActive = true;
+            scene.time.delayedCall(100, () => setupLevel(scene, currentLevel + 1));
         }
 
         // --- מערכת חנות מושלמת (לא פוגעת בכלום) ---
@@ -598,6 +704,7 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
             }
             if (level === 2) fakeGoal = scene.physics.add.staticSprite(1600, 520, 'goalTex').setTint(0xFFDDDD);
 
+            if (attackDrone) { attackDrone.destroy(); attackDrone = null; }
             if (!player) {
                 player = scene.physics.add.sprite(100, 450, 'playerWizardTex').setBounce(0.1).setCollideWorldBounds(true).setDepth(50).setScale(1.1);
                 scene.cameras.main.startFollow(player, true, 0.05, 0.05);
@@ -611,6 +718,10 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
                 player.x = 100; player.y = 450; player.setVelocity(0); player.clearTint(); player.setScale(1.1);
                 if (playerWing) { playerWing.setPosition(player.x - 12, player.y - 10); }
                 if (playerMouth) { playerMouth.setPosition(player.x + 10, player.y + 8); }
+            }
+            if (hasDrone && player) {
+                attackDrone = scene.physics.add.sprite(player.x, player.y - 50, 'droneTex').setDepth(55);
+                attackDrone.body.allowGravity = false;
             }
 
             deathGhost = scene.physics.add.sprite(3000, 100, 'ghostTex').setAlpha(0.8).setDepth(60); deathGhost.body.allowGravity = false;
@@ -691,7 +802,7 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
                     updateTaskOverlay();
                     scene.time.delayedCall(50, () => {
                         try {
-                            setupLevel(scene, currentLevel + 1);
+                            showRunUpgradeMenu(scene);
                         } catch (err) {
                             showError(err);
                         }
