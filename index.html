@@ -44,6 +44,7 @@
 <body>
     <div id="error-msg"></div>
     <div id="game-container"></div>
+    <video id="victory-video" preload="auto" muted playsinline style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); width:760px; max-width:90vw; z-index:1202; border:4px solid #00FF00; border-radius:12px; background:black;"></video>
     
     <script>
         window.onerror = function(msg, url, line, column, error) {
@@ -86,7 +87,6 @@
             this.load.image('homeBackgroundImg', 'מסך הבית.png');
             this.load.image('iceDragonImg', '818VKX6uLAL.jpg');
             this.load.image('stage5DragonImg', 'Gemini_Generated_Image_b1yyxab1yyxab1yy.png');
-            this.load.video('victoryVideo', './PixVerse_V6_Image_Text_720P_תן_לי_סרטון_אנימצי.mp4', 'loadeddata', false, true);
         }
 
         const config = { type: Phaser.AUTO, width: 800, height: 600, parent: 'game-container', physics: { default: 'arcade', arcade: { gravity: { y: 1000 }, debug: false } }, scene: { preload: preload, create: create, update: update } };
@@ -932,57 +932,38 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
         }
         
         function playVictorySequence(scene) {
-            if (victoryVideo) { victoryVideo.destroy(); victoryVideo = null; }
             if (victoryOverlay) { victoryOverlay.destroy(); victoryOverlay = null; }
             if (victoryText) { victoryText.destroy(); victoryText = null; }
             if (centerText) centerText.setVisible(false);
             if (bossHealthText) bossHealthText.setText('');
             scene.physics.world.pause();
-            victoryOverlay = scene.add.rectangle(400, 300, 800, 600, 0x000000, 0.8).setScrollFactor(0).setDepth(1200);
-            let videoPlayed = false;
-            try {
-                victoryVideo = scene.add.video(400, 300, 'victoryVideo').setOrigin(0.5).setDisplaySize(760, 430).setDepth(1201);
-                if (victoryVideo) {
-                    if (victoryVideo.setLoop) victoryVideo.setLoop(false);
-                    if (victoryVideo.setMute) victoryVideo.setMute(true);
-                    if (victoryVideo.play) {
-                        const result = victoryVideo.play();
-                        if (result && result.catch) {
-                            result.catch((e) => {
-                                console.warn('Victory video play promise rejected:', e);
-                                if (victoryVideo) {
-                                    victoryVideo.destroy();
-                                    victoryVideo = null;
-                                }
-                            });
-                        }
-                        videoPlayed = true;
-                    }
+            victoryOverlay = scene.add.rectangle(400, 300, 800, 600, 0x000000, 0.95).setScrollFactor(0).setDepth(1200);
+
+            const videoElement = document.getElementById('victory-video');
+            if (videoElement) {
+                videoElement.src = encodeURI('PixVerse_V6_Image_Text_720P_תן_לי_סרטון_אנימצי.mp4');
+                videoElement.style.display = 'block';
+                videoElement.currentTime = 0;
+                videoElement.loop = false;
+                videoElement.muted = true;
+                videoElement.onended = () => {
+                    if (victoryText) victoryText.setVisible(true);
+                };
+                const playResult = videoElement.play();
+                if (playResult && playResult.catch) {
+                    playResult.catch((e) => {
+                        console.warn('Victory video play rejected:', e);
+                        if (victoryText) victoryText.setVisible(true);
+                    });
                 }
-            } catch (e) {
-                console.warn('Failed to create or play victoryVideo:', e);
-                victoryVideo = null;
             }
+
             victoryText = scene.add.text(400, 540, 'נצחת את הדרקון הנורא!', { fontSize: '32px', fill: '#00FF00', fontStyle: 'bold', align: 'center', wordWrap: { width: 740 } }).setOrigin(0.5).setDepth(1202).setVisible(false);
-            if (!victoryVideo) {
-                if (victoryText) victoryText.setVisible(true);
-            } else {
-                if (victoryVideo.video) {
-                    victoryVideo.video.addEventListener('ended', () => {
-                        if (victoryText) victoryText.setVisible(true);
-                    });
+            scene.time.delayedCall(1000, () => {
+                if (victoryText && !victoryText.visible) {
+                    victoryText.setVisible(true);
                 }
-                if (victoryVideo.on) {
-                    victoryVideo.on('complete', () => {
-                        if (victoryText) victoryText.setVisible(true);
-                    });
-                }
-                scene.time.delayedCall(1500, () => {
-                    if (victoryText && !victoryText.visible) {
-                        victoryText.setVisible(true);
-                    }
-                });
-            }
+            });
         }
 
         function healBoss(amount) {
