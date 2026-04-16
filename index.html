@@ -117,6 +117,8 @@
         let isUpgradeMenuOpen = false, upgradeMenuContainer;
         let upgradeOptionTexts = [];
         let currentUpgradeChoices = [];
+        let pendingUpgrade = null;
+        let tempUpgradeBackup = { shootDelay: null, specialWeapon: null, hasDrone: null, currentSpeed: null, dashSpeed: null, isInvincible: null, gravityY: null };
         let homeMenuContainer, helpOverlay, tasksOverlay, homeMenuActive = true, homeMenuActiveBeforeTasks = false, currentScene;
         let taskButton, tasksActive = false;
         let taskLine1, taskLine2, taskLine3;
@@ -422,12 +424,31 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
             upgradeMenuContainer.add([bg, title, subtitle, ...upgradeOptionTexts, hint]);
         }
 
+        function clearTemporaryUpgrades() {
+            if (tempUpgradeBackup.shootDelay !== null) shootDelay = tempUpgradeBackup.shootDelay;
+            if (tempUpgradeBackup.specialWeapon !== null) specialWeapon = tempUpgradeBackup.specialWeapon;
+            if (tempUpgradeBackup.hasDrone !== null) {
+                hasDrone = tempUpgradeBackup.hasDrone;
+                if (!hasDrone && attackDrone) { attackDrone.destroy(); attackDrone = null; }
+            }
+            if (tempUpgradeBackup.currentSpeed !== null) currentSpeed = tempUpgradeBackup.currentSpeed;
+            if (tempUpgradeBackup.dashSpeed !== null) dashSpeed = tempUpgradeBackup.dashSpeed;
+            if (tempUpgradeBackup.isInvincible !== null) {
+                isInvincible = tempUpgradeBackup.isInvincible;
+                if (!isInvincible && bubbleShield) bubbleShield.setAlpha(0);
+            }
+            if (tempUpgradeBackup.gravityY !== null && currentScene) {
+                currentScene.physics.world.gravity.y = tempUpgradeBackup.gravityY;
+            }
+            tempUpgradeBackup = { shootDelay: null, specialWeapon: null, hasDrone: null, currentSpeed: null, dashSpeed: null, isInvincible: null, gravityY: null };
+        }
+
         function showRunUpgradeMenu(scene) {
             let allUpgrades = [
                 {
                     title: '+1 חיים',
                     desc: 'מוסיף חיים מיידית ויכול להגדיל את המקסימום',
-                    apply: (scene) => {
+                    apply: () => {
                         health = Math.min(5, health + 1);
                         if (healthText) healthText.setText('חיים: ' + health);
                         centerText.setText('בחרת: +1 חיים').setVisible(true);
@@ -437,35 +458,36 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
                     title: 'ירי מהיר יותר',
                     desc: 'קצר את זמן הטעינה של הירי לשלב הבא',
                     apply: () => {
+                        if (tempUpgradeBackup.shootDelay === null) tempUpgradeBackup.shootDelay = shootDelay;
                         shootDelay = Math.max(100, shootDelay - 150);
                         centerText.setText('בחרת: ירי מהיר יותר').setVisible(true);
                     }
                 },
                 {
                     title: 'מגן בועה',
-                    desc: 'מגן בלתי חדיר למשך 10 שניות',
+                    desc: 'מגן בלתי חדיר לשלב הבא',
                     apply: (scene) => {
+                        if (tempUpgradeBackup.isInvincible === null) tempUpgradeBackup.isInvincible = isInvincible;
                         isInvincible = true;
                         if (bubbleShield) bubbleShield.setAlpha(1);
-                        scene.time.delayedCall(10000, () => {
-                            isInvincible = false;
-                            if (bubbleShield) bubbleShield.setAlpha(0);
-                        });
                         centerText.setText('בחרת: מגן בועה').setVisible(true);
                     }
                 },
                 {
                     title: 'רחפן תומך',
-                    desc: 'רחפן יגן עליך ויורה על אויבים',
+                    desc: 'רחפן שקיים לשלב הבא בלבד',
                     apply: () => {
+                        if (tempUpgradeBackup.hasDrone === null) tempUpgradeBackup.hasDrone = hasDrone;
                         hasDrone = true;
                         centerText.setText('בחרת: רחפן תומך').setVisible(true);
                     }
                 },
                 {
                     title: 'ירי אולטימטיבי',
-                    desc: 'שלושה כדורי קרח בבת אחת עם זמן טעינה קצר',
+                    desc: 'שלושה כדורי קרח בבת אחת לשלב הבא',
                     apply: () => {
+                        if (tempUpgradeBackup.specialWeapon === null) tempUpgradeBackup.specialWeapon = specialWeapon;
+                        if (tempUpgradeBackup.shootDelay === null) tempUpgradeBackup.shootDelay = shootDelay;
                         specialWeapon = 'ultimateIce';
                         shootDelay = 100;
                         if (player) player.setTint(0x00FFFF);
@@ -479,6 +501,144 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
                         health = 5;
                         if (healthText) healthText.setText('חיים: ' + health);
                         centerText.setText('בחרת: החלמה מלאה').setVisible(true);
+                    }
+                },
+                {
+                    title: 'דאש מהיר יותר',
+                    desc: 'הדאש שלך מהיר משמעותית לשלב הבא',
+                    apply: () => {
+                        if (tempUpgradeBackup.dashSpeed === null) tempUpgradeBackup.dashSpeed = dashSpeed;
+                        dashSpeed = 1800;
+                        centerText.setText('בחרת: דאש מהיר יותר').setVisible(true);
+                    }
+                },
+                {
+                    title: 'ריצה מהירה',
+                    desc: 'מהירות התנועה שלך עולה לשלב הבא',
+                    apply: () => {
+                        if (tempUpgradeBackup.currentSpeed === null) tempUpgradeBackup.currentSpeed = currentSpeed;
+                        currentSpeed = 450;
+                        centerText.setText('בחרת: ריצה מהירה').setVisible(true);
+                    }
+                },
+                {
+                    title: 'קסם אש חזק',
+                    desc: 'שדרוג לזמן ארוך: ירי אש חזק עם קצב מהיר',
+                    apply: () => {
+                        specialWeapon = 'fire';
+                        shootDelay = 200;
+                        if (player) player.setTint(0xFF4500);
+                        centerText.setText('בחרת: קסם אש חזק').setVisible(true);
+                    }
+                },
+                {
+                    title: 'סוד הדרקון',
+                    desc: 'שינוי מראה מרשים עם כוח קוסמי קל',
+                    apply: () => {
+                        playerSkin = true;
+                        if (player) player.setTint(0xAA00FF);
+                        centerText.setText('בחרת: סוד הדרקון').setVisible(true);
+                    }
+                },
+                {
+                    title: '+3 מטבעות דרקון',
+                    desc: 'קבל מטבעות נוספים לשימוש בחנות הקבועה',
+                    apply: () => {
+                        dragonCoins += 3;
+                        if (dragonCoinText) dragonCoinText.setText('מטבעות דרקון: ' + dragonCoins);
+                        centerText.setText('בחרת: +3 מטבעות דרקון').setVisible(true);
+                    }
+                },
+                {
+                    title: '+2 חיים',
+                    desc: 'מוסיף חיים נוספים לשלב הבא (עד 5)',
+                    apply: () => {
+                        health = Math.min(5, health + 2);
+                        if (healthText) healthText.setText('חיים: ' + health);
+                        centerText.setText('בחרת: +2 חיים').setVisible(true);
+                    }
+                },
+                {
+                    title: 'קפיצה עליונה',
+                    desc: 'השתמש בסופר קפיצה לשלב הבא',
+                    apply: (scene) => {
+                        superJumpActive = true;
+                        scene.time.delayedCall(10000, () => { superJumpActive = false; });
+                        centerText.setText('בחרת: קפיצה עליונה').setVisible(true);
+                    }
+                },
+                {
+                    title: 'גרביטציה קלה',
+                    desc: 'המשקל שלך יורד לשלב הבא',
+                    apply: (scene) => {
+                        if (tempUpgradeBackup.gravityY === null) tempUpgradeBackup.gravityY = scene.physics.world.gravity.y;
+                        scene.physics.world.gravity.y = 300;
+                        centerText.setText('בחרת: גרביטציה קלה').setVisible(true);
+                    }
+                },
+                {
+                    title: 'אגף מהבהב',
+                    desc: 'ירי של טריפל קרח לשלב הבא',
+                    apply: () => {
+                        if (tempUpgradeBackup.specialWeapon === null) tempUpgradeBackup.specialWeapon = specialWeapon;
+                        if (tempUpgradeBackup.shootDelay === null) tempUpgradeBackup.shootDelay = shootDelay;
+                        specialWeapon = 'ultimateIce';
+                        shootDelay = 150;
+                        if (player) player.setTint(0x00FFFF);
+                        centerText.setText('בחרת: אגף מהבהב').setVisible(true);
+                    }
+                },
+                {
+                    title: 'מסכת ברק',
+                    desc: 'הפוך לאין-מכוסה למשך כל השלב',
+                    apply: (scene) => {
+                        if (tempUpgradeBackup.isInvincible === null) tempUpgradeBackup.isInvincible = isInvincible;
+                        isInvincible = true;
+                        if (bubbleShield) bubbleShield.setAlpha(1);
+                        centerText.setText('בחרת: מסכת ברק').setVisible(true);
+                    }
+                },
+                {
+                    title: 'כוח מטאור',
+                    desc: 'זורק שלושה כדורים אדירים בתחילת השלב',
+                    apply: (scene) => {
+                        ['-1','0','1'].forEach((offset) => {
+                            let meteor = fireballs.create(player.x, player.y - 20, 'powerTex').setTint(0xFF6600);
+                            meteor.body.allowGravity = false;
+                            meteor.setVelocityX(player.flipX ? -400 : 400);
+                            meteor.setVelocityY(-200 + parseInt(offset) * 80);
+                        });
+                        centerText.setText('בחרת: כוח מטאור').setVisible(true);
+                    }
+                },
+                {
+                    title: 'ריקוד חצים',
+                    desc: 'היריות שלך נעשות מהירות יותר לזמן קצר',
+                    apply: () => {
+                        if (tempUpgradeBackup.shootDelay === null) tempUpgradeBackup.shootDelay = shootDelay;
+                        shootDelay = Math.max(100, shootDelay - 100);
+                        centerText.setText('בחרת: ריקוד חצים').setVisible(true);
+                    }
+                },
+                {
+                    title: 'ריפוי מהיר',
+                    desc: 'בריאות מלאה והסרת צבע רע',
+                    apply: () => {
+                        health = 5;
+                        if (healthText) healthText.setText('חיים: ' + health);
+                        if (player) player.clearTint();
+                        centerText.setText('בחרת: ריפוי מהיר').setVisible(true);
+                    }
+                },
+                {
+                    title: 'מעוף הדרקון',
+                    desc: 'השחקן טס גבוה יותר וקופץ חזק יותר לשלב הבא',
+                    apply: (scene) => {
+                        superJumpActive = true;
+                        if (tempUpgradeBackup.currentSpeed === null) tempUpgradeBackup.currentSpeed = currentSpeed;
+                        currentSpeed = 320;
+                        scene.time.delayedCall(10000, () => { superJumpActive = false; });
+                        centerText.setText('בחרת: מעוף הדרקון').setVisible(true);
                     }
                 }
             ];
@@ -499,8 +659,7 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
 
         function pickUpgrade(scene, index) {
             if (!isUpgradeMenuOpen || !currentUpgradeChoices[index - 1]) return;
-            let choice = currentUpgradeChoices[index - 1];
-            choice.apply(scene);
+            pendingUpgrade = currentUpgradeChoices[index - 1];
             if (upgradeMenuContainer) {
                 upgradeMenuContainer.setVisible(false);
             }
@@ -660,6 +819,7 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
         function setupLevel(scene, level) {
             levelTransitioning = false;
             currentLevel = level;
+            clearTemporaryUpgrades();
             if (trueBossVideo) { trueBossVideo.destroy(); trueBossVideo = null; }
             scene.physics.world.timeScale = 1; reverseControls = false; gravityFlipped = false; isTiny = false; bombActive = false; bombText.setVisible(false); superJumpActive = false; canJumpTroll = true; currentSpeed = 250;
             dashSpeed = permanentUpgrades.longDash ? 1600 : 1000;
@@ -723,6 +883,7 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
                 attackDrone = scene.physics.add.sprite(player.x, player.y - 50, 'droneTex').setDepth(55);
                 attackDrone.body.allowGravity = false;
             }
+            if (pendingUpgrade) { pendingUpgrade.apply(scene); pendingUpgrade = null; }
 
             deathGhost = scene.physics.add.sprite(3000, 100, 'ghostTex').setAlpha(0.8).setDepth(60); deathGhost.body.allowGravity = false;
 
