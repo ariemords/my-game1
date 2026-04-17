@@ -86,6 +86,9 @@
         function preload() {
             this.load.image('homeBackgroundImg', 'מסך הבית.png');
             this.load.image('iceDragonImg', '818VKX6uLAL.jpg');
+            this.load.image('stage3DragonImg', 'PixVerse_Image_Effect_prompt_תסיר לו את הרקע ו.jpg');
+            this.load.image('stage3DragonAltImg', 'PixVerse_Image_Effect_prompt_תיצור בדיוק אותו .jpg');
+            this.load.image('chatGPTImageTex', 'ChatGPT Image Apr 17, 2026, 11_05_45 AM.png');
             this.load.image('stage5DragonImg', 'Gemini_Generated_Image_b1yyxab1yyxab1yy.png');
         }
 
@@ -119,6 +122,8 @@
         let currentUpgradeChoices = [];
         let pendingUpgrade = null;
         let tempUpgradeBackup = { shootDelay: null, specialWeapon: null, hasDrone: null, currentSpeed: null, dashSpeed: null, isInvincible: null, gravityY: null };
+        let stage3DragonTimer = null;
+        let stage3DragonAlt = false;
         let homeMenuContainer, helpOverlay, tasksOverlay, homeMenuActive = true, homeMenuActiveBeforeTasks = false, currentScene;
         let taskButton, tasksActive = false;
         let taskLine1, taskLine2, taskLine3;
@@ -933,6 +938,7 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
         function setupLevel(scene, level) {
             levelTransitioning = false;
             currentLevel = level;
+            if (stage3DragonTimer) { stage3DragonTimer.remove(false); stage3DragonTimer = null; stage3DragonAlt = false; }
             clearTemporaryUpgrades();
             if (trueBossVideo) { trueBossVideo.destroy(); trueBossVideo = null; }
             scene.physics.world.timeScale = 1; reverseControls = false; gravityFlipped = false; isTiny = false; bombActive = false; bombText.setVisible(false); superJumpActive = false; canJumpTroll = true; currentSpeed = 250;
@@ -1018,8 +1024,9 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
             } else if (level === 3) {
                 [600, 1200, 1800].forEach(x => { let fp = platforms.create(x, 350, 'platTex'); fp.setTint(0xAAAAAA); fp.body.enable = false; });
                 
-                boss = scene.physics.add.sprite(2900, 350, 'iceDragonImg').setBounce(0.2).setCollideWorldBounds(true).setData('isAlive', true).setData('hp', 10);
-                boss.setDisplaySize(160, 100);
+                boss = scene.physics.add.sprite(2900, 350, 'stage3DragonImg').setBounce(0.2).setCollideWorldBounds(true).setData('isAlive', true).setData('hp', 10);
+                boss.setDisplaySize(180, 120);
+                boss.body.setSize(160, 100, true);
                 boss.wing = scene.add.image(boss.x - 40, boss.y - 10, 'dragonWingTex').setOrigin(0.5).setDepth(49);
                 boss.mouth = scene.add.image(boss.x + 30, boss.y + 10, 'dragonMouthTex').setOrigin(0.5).setDepth(51);
                 scene.tweens.add({ targets: boss.wing, angle: { from: -35, to: 35 }, duration: 420, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
@@ -1027,6 +1034,18 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
                 scene.physics.add.collider(boss, ground);
                 scene.tweens.add({ targets: boss, y: boss.y - 20, duration: 1500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
                 dragonCoinsGroup.create(2600, 500, 'dragonCoinTex').setBounce(0.5).setCollideWorldBounds(true);
+                
+                if (stage3DragonTimer) { stage3DragonTimer.remove(false); stage3DragonTimer = null; stage3DragonAlt = false; }
+                stage3DragonTimer = scene.time.addEvent({
+                    delay: 200,
+                    loop: true,
+                    callback: () => {
+                        if (boss && boss.active) {
+                            boss.setTexture(stage3DragonAlt ? 'stage3DragonImg' : 'stage3DragonAltImg');
+                            stage3DragonAlt = !stage3DragonAlt;
+                        }
+                    }
+                });
                 
                 if(gameActive) startBossAI(scene);
             } else if (level === 4) {
@@ -1195,15 +1214,17 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
                 SoundEngine.play('shoot');
                 if (specialWeapon === 'ultimateIce') {
                     ['-1','0','1'].forEach((offset, index) => {
-                        let ice = iceballs.create(player.x, player.y, 'iceTex');
+                        let ice = iceballs.create(player.x, player.y, 'chatGPTImageTex');
                         ice.setVelocityX(player.flipX ? -500 : 500);
                         ice.setVelocityY((index - 1) * 100);
                         ice.body.allowGravity = false;
+                        ice.setDisplaySize(40, 40);
                     });
                 } else {
-                    let ice = iceballs.create(player.x, player.y, 'iceTex');
+                    let ice = iceballs.create(player.x, player.y, 'chatGPTImageTex');
                     ice.setVelocityX(player.flipX ? -500 : 500);
                     ice.body.allowGravity = false;
+                    ice.setDisplaySize(40, 40);
                 }
             }
             
