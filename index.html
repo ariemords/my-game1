@@ -85,6 +85,7 @@
 
         function preload() {
             this.load.image('homeBackgroundImg', 'home_screen.png');
+            this.load.image('stage1BackgroundImg', 'stage1.png');
             this.load.image('iceDragonImg', '818VKX6uLAL.jpg');
             this.load.image('stage3DragonImg', 'stage3_dragon1.jpg');
             this.load.image('stage3DragonAltImg', 'stage3_dragon2.jpg');
@@ -124,6 +125,7 @@
         let tempUpgradeBackup = { shootDelay: null, specialWeapon: null, hasDrone: null, currentSpeed: null, dashSpeed: null, isInvincible: null, gravityY: null };
         let stage3DragonTimer = null;
         let stage3DragonAlt = false;
+        let stage1BackgroundImage = null;
         let homeMenuContainer, helpOverlay, tasksOverlay, homeMenuActive = true, homeMenuActiveBeforeTasks = false, currentScene;
         let taskButton, tasksActive = false;
         let taskLine1, taskLine2, taskLine3;
@@ -953,6 +955,7 @@ R - Restart`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { 
             let groups = [ground, platforms, iceGround, mysteryBlocks, enemies, bats, goals, springs, healSprings, lasers, lava, fireballs, missiles, fallingSpikes, iceballs, coinsGroup, powerUps, defuseOrbs, portals, fakeCoins, homingFireballs, poisonDrops, badSprings];
             groups.forEach(g => { if(g) g.clear(true, true); });
             if(fogOverlay) { fogOverlay.destroy(); fogOverlay = null; }
+            if(stage1BackgroundImage) { stage1BackgroundImage.destroy(); stage1BackgroundImage = null; }
             if(deathGhost) { deathGhost.destroy(); deathGhost = null; }
 
             ground = scene.physics.add.staticGroup(); platforms = scene.physics.add.staticGroup(); iceGround = scene.physics.add.staticGroup(); mysteryBlocks = scene.physics.add.staticGroup();
@@ -964,6 +967,10 @@ R - Restart`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { 
 
             scene.physics.world.setBounds(0, 0, 3200, 600); scene.cameras.main.setBounds(0, 0, 3200, 600);
             scene.physics.world.gravity.y = 1000;
+
+            if ([1, 2, 4].includes(level)) {
+                stage1BackgroundImage = scene.add.image(400, 300, 'stage1BackgroundImg').setOrigin(0.5).setScrollFactor(0).setDepth(-1).setDisplaySize(800, 600);
+            }
 
             if (level === 1) { scene.cameras.main.setBackgroundColor('#4CA1AF'); for (let x = 0; x < 3200; x += 400) ground.create(x + 200, 580, 'groundTex'); } 
             else if (level === 2) { scene.cameras.main.setBackgroundColor('#483D8B'); for (let x = 0; x < 3200; x += 400) { if(x === 1200 || x === 2000) iceGround.create(x + 200, 580, 'iceGroundTex'); else ground.create(x + 200, 580, 'groundTex'); } } 
@@ -1348,7 +1355,7 @@ R - Restart`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { 
 
             const videoElement = document.getElementById('victory-video');
             if (videoElement) {
-                videoElement.src = encodeURI('victory_video.mp4');
+                videoElement.src = encodeURI('video.mp4');
                 videoElement.style.display = 'block';
                 videoElement.currentTime = 0;
                 videoElement.loop = false;
