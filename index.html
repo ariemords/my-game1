@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="he" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,7 +10,7 @@
             let errDiv = document.getElementById('error-msg');
             if (!errDiv) return false;
             errDiv.style.display = 'block';
-            let text = "שגיאה:<br>" + msg + "<br>Line: " + line + ", Column: " + column;
+            let text = "Error:<br>" + msg + "<br>Line: " + line + ", Column: " + column;
             if (error && error.stack) {
                 text += "<br>Stack:<br>" + error.stack.replace(/\n/g, '<br>');
             }
@@ -50,7 +50,7 @@
         window.onerror = function(msg, url, line, column, error) {
             let errDiv = document.getElementById('error-msg');
             errDiv.style.display = 'block';
-            let text = "שגיאה:<br>" + msg + "<br>Line: " + line + ", Column: " + column;
+            let text = "Error:<br>" + msg + "<br>Line: " + line + ", Column: " + column;
             if (error && error.stack) {
                 text += "<br>Stack:<br>" + error.stack.replace(/\n/g, '<br>');
             }
@@ -84,10 +84,10 @@
         };
 
         function preload() {
-            this.load.image('homeBackgroundImg', 'מסך הבית.png');
+            this.load.image('homeBackgroundImg', 'home_screen.png');
             this.load.image('iceDragonImg', '818VKX6uLAL.jpg');
-            this.load.image('stage3DragonImg', 'PixVerse_Image_Effect_prompt_תסיר לו את הרקע ו.jpg');
-            this.load.image('stage3DragonAltImg', 'PixVerse_Image_Effect_prompt_תיצור בדיוק אותו .jpg');
+            this.load.image('stage3DragonImg', 'stage3_dragon1.jpg');
+            this.load.image('stage3DragonAltImg', 'stage3_dragon2.jpg');
             this.load.image('chatGPTImageTex', 'ChatGPT Image Apr 17, 2026, 11_05_45 AM.png');
             this.load.image('stage5DragonImg', 'Gemini_Generated_Image_b1yyxab1yyxab1yy.png');
         }
@@ -131,10 +131,10 @@
         let gameWasActiveBeforeTasks = false;
         let specialWeapon = null, playerSkin = false;
         
-        // --- משתני חנות ותוספות חדשות ---
+        // --- New shop variables and extras ---
         let isShopOpen = false, shopContainer;
-        let shootDelay = 500; // זמן המתנה לירי (ניתן לשדרוג)
-        let attackDrone = null, hasDrone = false, lastDroneShot = 0; // מערכת הרחפן
+        let shootDelay = 500; // shooting delay (upgradeable)
+        let attackDrone = null, hasDrone = false, lastDroneShot = 0; // drone system
         // --------------------------------
 
         let scoreText, healthText, bossHealthText, centerText, levelText, bombText, bossTalk;
@@ -150,7 +150,7 @@
             g.fillStyle(0xFF0000, 0.9); g.fillCircle(16, 16, 14); g.fillStyle(0xFFFFFF); g.fillCircle(12, 14, 4); g.fillCircle(20, 14, 4); g.fillStyle(0x000000); g.fillRect(10, 12, 12, 4); g.generateTexture('thiefTex', 32, 32); g.clear();
             g.fillStyle(0x222222); g.fillRect(12, 12, 8, 8); g.fillStyle(0x444444); g.moveTo(12, 12); g.lineTo(0, 4); g.lineTo(12, 16); g.fill(); g.moveTo(20, 12); g.lineTo(32, 4); g.lineTo(20, 16); g.fill(); g.fillStyle(0xFF0000); g.fillRect(14, 14, 1, 1); g.fillRect(17, 14, 1, 1); g.generateTexture('batTex', 32, 32); g.clear();
             
-            // 🐉 הדרקון המכני המקורי - בדיוק כפי שהיה!
+            // 🐉 original mechanical dragon - just like before!
             g.fillStyle(0xAAAAAA); g.fillTriangle(60, 40, 20, -20, 140, -10); g.fillTriangle(80, 40, 50, -30, 160, -5); g.fillStyle(0x777777); g.fillRect(40, 40, 60, 30); g.fillStyle(0x999999); g.fillRect(10, 20, 40, 25); g.fillStyle(0x444444); g.fillRect(0, 30, 25, 10); g.fillStyle(0xFF0000); g.fillRect(25, 25, 6, 6); g.fillStyle(0xAAAAAA); g.fillTriangle(100, 60, 160, 30, 160, 80); g.fillStyle(0xFFFFFF); g.fillTriangle(20, 20, 25, 5, 30, 20); g.fillTriangle(50, 40, 55, 25, 60, 40); g.fillTriangle(70, 40, 75, 25, 80, 40); g.fillTriangle(140, 55, 155, 45, 145, 65); g.generateTexture('realDragon', 170, 100); g.clear();
 
             g.fillStyle(0x8B4513); g.fillRect(0, 0, 400, 40); g.fillStyle(0x228B22); g.fillRect(0, 0, 400, 8); g.generateTexture('groundTex', 400, 40); g.clear();
@@ -190,11 +190,11 @@
             g.fillStyle(0x00FF00); g.fillCircle(4,4,4); g.generateTexture('poisonDropTex', 8, 8); g.clear();
             g.fillStyle(0xFF0000); g.fillRect(0, 0, 32, 16); g.generateTexture('badSpringTex', 32, 16); g.clear();
 
-            // טקסטורה חדשה לרחפן (Drone)
+            // new drone texture
             g.fillStyle(0x888888); g.fillCircle(10, 10, 10); g.fillStyle(0x00FFFF); g.fillCircle(10, 10, 4); g.generateTexture('droneTex', 20, 20); g.clear();
-            // טקסטורה ליריה של הרחפן
+            // drone attack shot texture
             g.fillStyle(0x00FFFF); g.fillCircle(4, 4, 4); g.generateTexture('plasmaTex', 8, 8); g.clear();
-            // טקסטורה של מכשף להחשכה
+            // wizard texture for darkness
             g.fillStyle(0x3B1F0B); g.fillRect(0, 0, 24, 4); g.fillStyle(0x8B4513); g.fillRect(0, 2, 24, 2); g.fillStyle(0xFFFF00); g.fillRect(22, 1, 4, 2); g.generateTexture('wandTex', 28, 6); g.clear();
             g.fillStyle(0x5A2F0A); g.fillRect(0, 0, 28, 40); g.fillStyle(0x43200E); g.fillRect(2, 4, 24, 28); g.fillStyle(0xFFFFFF); g.fillCircle(14, 10, 8); g.fillStyle(0x000000); g.fillCircle(11, 9, 2); g.fillCircle(17, 9, 2); g.fillStyle(0xFF6666); g.fillRect(10, 15, 8, 4); g.fillStyle(0x8B0000); g.fillTriangle(4, 32, 14, 44, 24, 32); g.generateTexture('wizardTex', 28, 48); g.clear();
         }
@@ -206,9 +206,9 @@
             if (!errDiv) return;
             errDiv.style.display = 'block';
             if (err instanceof Error) {
-                errDiv.innerHTML = "שגיאה:<br>" + err.message + "<br>Stack:<br>" + err.stack.replace(/\n/g, '<br>');
+                errDiv.innerHTML = "Error:<br>" + err.message + "<br>Stack:<br>" + err.stack.replace(/\n/g, '<br>');
             } else {
-                errDiv.innerHTML = "שגיאה: " + err;
+                errDiv.innerHTML = "Error: " + err;
             }
         }
 
@@ -266,16 +266,16 @@
             if (id === 2) reward = 700;
             if (id === 3) reward = 900;
             score += reward;
-            scoreText.setText('ניקוד: ' + score);
+            scoreText.setText('Score: ' + score);
             SoundEngine.play('coin');
             updateTaskOverlay();
         }
 
         function updateTaskOverlay() {
             if (!taskLine1 || !taskLine2 || !taskLine3) return;
-            taskLine1.setText(`1. אסוף 40 מטבעות בריצה אחת - ${taskState.completed[1] ? (taskState.claimed[1] ? 'נלקח' : 'מוכן!') : `בוצע ${taskState.coinsRun}/40`}`);
-            taskLine2.setText(`2. הורג 8 אויבים בריצה אחת - ${taskState.completed[2] ? (taskState.claimed[2] ? 'נלקח' : 'מוכן!') : `בוצע ${taskState.enemiesRun}/8`}`);
-            taskLine3.setText(`3. השלם שלב בלי לקבל נזק - ${taskState.completed[3] ? (taskState.claimed[3] ? 'נלקח' : 'מוכן!') : (taskState.noDamageRun ? 'בשוויון' : 'נכשל')}`);
+            taskLine1.setText(`1. Collect 40 coins in one run - ${taskState.completed[1] ? (taskState.claimed[1] ? 'Claimed' : 'Ready!') : `Done ${taskState.coinsRun}/40`}`);
+            taskLine2.setText(`2. Defeat 8 enemies in one run - ${taskState.completed[2] ? (taskState.claimed[2] ? 'Claimed' : 'Ready!') : `Done ${taskState.enemiesRun}/8`}`);
+            taskLine3.setText(`3. Complete a level without taking damage - ${taskState.completed[3] ? (taskState.claimed[3] ? 'Claimed' : 'Ready!') : (taskState.noDamageRun ? 'Perfect' : 'Failed')}`);
             taskLine1.setColor(taskState.completed[1] ? (taskState.claimed[1] ? '#888888' : '#00FF00') : '#FFFFFF');
             taskLine2.setColor(taskState.completed[2] ? (taskState.claimed[2] ? '#888888' : '#00FF00') : '#FFFFFF');
             taskLine3.setColor(taskState.completed[3] ? (taskState.claimed[3] ? '#888888' : '#00FF00') : '#FFFFFF');
@@ -309,10 +309,10 @@
             let homeImage = scene.add.image(0, 0, 'homeBackgroundImg').setOrigin(0.5).setDisplaySize(760, 520).setAlpha(1);
             let bg = scene.add.rectangle(0, 0, 760, 520, 0x000000, 0.2).setStrokeStyle(4, 0x00FFFF);
             let title = scene.add.text(0, -150, 'THE MECHANICAL DRAGON', { fontSize: '34px', fill: '#FFD700', fontStyle: 'bold' }).setOrigin(0.5);
-            let playButton = scene.add.text(0, -40, 'שחק', { fontSize: '44px', fill: '#00FF00', fontStyle: 'bold' }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-            let helpButton = scene.add.text(0, 40, 'איך לשחק', { fontSize: '28px', fill: '#FFFFFF', fontStyle: 'bold' }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-            let taskButton = scene.add.text(0, 100, 'משימות', { fontSize: '28px', fill: '#00AAFF', fontStyle: 'bold' }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-            let hint = scene.add.text(0, 160, 'לחץ על שחק כדי להתחיל, או על המשימות לקבל פרסים מיוחדים', { fontSize: '18px', fill: '#AAAAAA', align: 'center', wordWrap: { width: 440 } }).setOrigin(0.5);
+            let playButton = scene.add.text(0, -40, 'Play', { fontSize: '44px', fill: '#00FF00', fontStyle: 'bold' }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+            let helpButton = scene.add.text(0, 40, 'How to Play', { fontSize: '28px', fill: '#FFFFFF', fontStyle: 'bold' }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+            let taskButton = scene.add.text(0, 100, 'Quests', { fontSize: '28px', fill: '#00AAFF', fontStyle: 'bold' }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+            let hint = scene.add.text(0, 160, 'Press Play to start, or open Quests for special rewards', { fontSize: '18px', fill: '#AAAAAA', align: 'center', wordWrap: { width: 440 } }).setOrigin(0.5);
             playButton.on('pointerdown', () => startGame(scene));
             helpButton.on('pointerdown', () => toggleHelpOverlay(true));
             taskButton.on('pointerdown', () => openTasksPage(scene));
@@ -320,25 +320,25 @@
 
             helpOverlay = scene.add.container(400, 300).setScrollFactor(0).setDepth(310).setVisible(false);
             let overlayBg = scene.add.rectangle(0, 0, 520, 420, 0x000000, 0.95).setStrokeStyle(4, 0x00FFAA);
-            let overlayTitle = scene.add.text(0, -150, 'איך לשחק', { fontSize: '32px', fill: '#00FFAA', fontStyle: 'bold' }).setOrigin(0.5);
-            let overlayBody = scene.add.text(0, -40, `W / ↑ / SPACE - לקפוץ
-X - לירות
-Z - דאש
-N - לפתוח חנות
-B - פתוח חנות קבועה
-R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { width: 460 } }).setOrigin(0.5);
-            let closeHelp = scene.add.text(0, 150, 'סגור', { fontSize: '24px', fill: '#FF6666', fontStyle: 'bold' }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+            let overlayTitle = scene.add.text(0, -150, 'How to Play', { fontSize: '32px', fill: '#00FFAA', fontStyle: 'bold' }).setOrigin(0.5);
+            let overlayBody = scene.add.text(0, -40, `W / ↑ / SPACE - Jump
+X - Shoot
+Z - Dash
+N - Open shop
+B - Open permanent shop
+R - Restart`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { width: 460 } }).setOrigin(0.5);
+            let closeHelp = scene.add.text(0, 150, 'Close', { fontSize: '24px', fill: '#FF6666', fontStyle: 'bold' }).setOrigin(0.5).setInteractive({ useHandCursor: true });
             closeHelp.on('pointerdown', () => toggleHelpOverlay(false));
             helpOverlay.add([overlayBg, overlayTitle, overlayBody, closeHelp]);
 
             tasksOverlay = scene.add.container(400, 300).setScrollFactor(0).setDepth(315).setVisible(false);
             let taskBg = scene.add.rectangle(0, 0, 520, 420, 0x10101A, 0.98).setStrokeStyle(4, 0x00AAFF);
-            let taskTitle = scene.add.text(0, -180, '📜 משימות', { fontSize: '32px', fill: '#00AAFF', fontStyle: 'bold' }).setOrigin(0.5);
-            taskLine1 = scene.add.text(-200, -90, '1. אסוף 40 מטבעות בריצה אחת', { fontSize: '20px', fill: '#FFFFFF', wordWrap: { width: 420 } });
-            taskLine2 = scene.add.text(-200, -30, '2. הורג 8 אויבים בריצה אחת', { fontSize: '20px', fill: '#FFFFFF', wordWrap: { width: 420 } });
-            taskLine3 = scene.add.text(-200, 30, '3. השלם שלב בלי לקבל נזק', { fontSize: '20px', fill: '#FFFFFF', wordWrap: { width: 420 } });
-            let taskHint = scene.add.text(0, 100, 'לחץ 1/2/3 לתבוע פרס אם המטרה הושלמה', { fontSize: '18px', fill: '#AAAAAA' }).setOrigin(0.5);
-            let taskClose = scene.add.text(0, 170, 'סגור', { fontSize: '24px', fill: '#FF6666', fontStyle: 'bold' }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+            let taskTitle = scene.add.text(0, -180, '📜 Quests', { fontSize: '32px', fill: '#00AAFF', fontStyle: 'bold' }).setOrigin(0.5);
+            taskLine1 = scene.add.text(-200, -90, '1. Collect 40 coins in one run', { fontSize: '20px', fill: '#FFFFFF', wordWrap: { width: 420 } });
+            taskLine2 = scene.add.text(-200, -30, '2. Defeat 8 enemies in one run', { fontSize: '20px', fill: '#FFFFFF', wordWrap: { width: 420 } });
+            taskLine3 = scene.add.text(-200, 30, '3. Complete a level without taking damage', { fontSize: '20px', fill: '#FFFFFF', wordWrap: { width: 420 } });
+            let taskHint = scene.add.text(0, 100, 'Press 1/2/3 to claim the reward if the goal is complete', { fontSize: '18px', fill: '#AAAAAA' }).setOrigin(0.5);
+            let taskClose = scene.add.text(0, 170, 'Close', { fontSize: '24px', fill: '#FF6666', fontStyle: 'bold' }).setOrigin(0.5).setInteractive({ useHandCursor: true });
             taskClose.on('pointerdown', () => closeTasksPage());
             tasksOverlay.add([taskBg, taskTitle, taskLine1, taskLine2, taskLine3, taskHint, taskClose]);
         }
@@ -376,11 +376,11 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
             bgFront = this.add.tileSprite(400, 540, 800, 120, 'frontGrassTex').setScrollFactor(0).setDepth(-1).setAlpha(0.65);
 
             currentScene = this;
-            scoreText = this.add.text(16, 16, 'ניקוד: 0', { fontSize: '24px', fill: '#FFF', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setScrollFactor(0).setDepth(200);
-            healthText = this.add.text(16, 50, 'חיים: 3', { fontSize: '24px', fill: '#FFF', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setScrollFactor(0).setDepth(200);
-            dragonCoinText = this.add.text(16, 84, 'מטבעות דרקון: 0', { fontSize: '20px', fill: '#FFD700', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setScrollFactor(0).setDepth(200);
-            permUpgradesText = this.add.text(16, 112, 'שדרוגים: אין', { fontSize: '18px', fill: '#AAAAFF', stroke: '#000', strokeThickness: 2 }).setScrollFactor(0).setDepth(200);
-            levelText = this.add.text(400, 16, 'שלב: 1', { fontSize: '24px', fill: '#FFF', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(200);
+            scoreText = this.add.text(16, 16, 'Score: 0', { fontSize: '24px', fill: '#FFF', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setScrollFactor(0).setDepth(200);
+            healthText = this.add.text(16, 50, 'Health: 3', { fontSize: '24px', fill: '#FFF', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setScrollFactor(0).setDepth(200);
+            dragonCoinText = this.add.text(16, 84, 'Dragon Coins: 0', { fontSize: '20px', fill: '#FFD700', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setScrollFactor(0).setDepth(200);
+            permUpgradesText = this.add.text(16, 112, 'Upgrades: None', { fontSize: '18px', fill: '#AAAAFF', stroke: '#000', strokeThickness: 2 }).setScrollFactor(0).setDepth(200);
+            levelText = this.add.text(400, 16, 'Level: 1', { fontSize: '24px', fill: '#FFF', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(200);
             bossHealthText = this.add.text(600, 16, '', { fontSize: '24px', fill: '#FF0000', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setScrollFactor(0).setDepth(200);
             bombText = this.add.text(400, 80, '', { fontSize: '40px', fill: '#FF0000', fontStyle: 'bold', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(200).setVisible(false);
             centerText = this.add.text(400, 300, '', { fontSize: '24px', fill: '#FFF', fontStyle: 'bold', align:'center', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5).setScrollFactor(0).setDepth(200).setVisible(false);
@@ -397,7 +397,7 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
             this.input.keyboard.on('keydown-UP', () => startGame(this));
             this.input.keyboard.on('keydown-SPACE', () => startGame(this));
             
-            // פתיחת חנות
+            // opening Shop
             this.input.keyboard.on('keydown-N', () => { if(!homeMenuActive && !isUpgradeMenuOpen) toggleShop(this); });
             this.input.keyboard.on('keydown-B', () => { if(!homeMenuActive && !gameActive && !isShopOpen && !isUpgradeMenuOpen) togglePermanentShop(this); });
             this.input.keyboard.on('keydown-M', () => { if(tasksOverlay && !tasksOverlay.visible && !isShopOpen && !isPermanentShopOpen && !isUpgradeMenuOpen) openTasksPage(this); });
@@ -410,7 +410,7 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
             loadPermanentProgress();
             setupLevel(this, 1);
             updatePermanentUI();
-            createShop(this); // יצירת תפריט החנות ברקע
+            createShop(this); // create shop menu in the background
             createPermanentShop(this);
             createRunUpgradeMenu(this);
         }
@@ -418,14 +418,14 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
         function createRunUpgradeMenu(scene) {
             upgradeMenuContainer = scene.add.container(400, 300).setScrollFactor(0).setDepth(1002).setVisible(false);
             let bg = scene.add.rectangle(0, 0, 520, 520, 0x101820, 0.96).setStrokeStyle(5, 0xFFAA00);
-            let title = scene.add.text(0, -220, 'בחר שדרוג רנדומלי', { fontSize: '30px', fill: '#FFCC00', fontStyle: 'bold' }).setOrigin(0.5);
-            let subtitle = scene.add.text(0, -180, 'לחץ 1/2/3 כדי לבחור אחד מתוך שלושה', { fontSize: '18px', fill: '#CCCCCC' }).setOrigin(0.5);
+            let title = scene.add.text(0, -220, 'Choose a random upgrade', { fontSize: '30px', fill: '#FFCC00', fontStyle: 'bold' }).setOrigin(0.5);
+            let subtitle = scene.add.text(0, -180, 'Press 1/2/3 to choose one of three', { fontSize: '18px', fill: '#CCCCCC' }).setOrigin(0.5);
             upgradeOptionTexts = [
                 scene.add.text(-220, -110, '1. ...', { fontSize: '20px', fill: '#FFFFFF', wordWrap: { width: 440 } }),
                 scene.add.text(-220, -30, '2. ...', { fontSize: '20px', fill: '#FFFFFF', wordWrap: { width: 440 } }),
                 scene.add.text(-220, 50, '3. ...', { fontSize: '20px', fill: '#FFFFFF', wordWrap: { width: 440 } })
             ];
-            let hint = scene.add.text(0, 200, 'לחץ על מספר כדי להתחיל את השלב הבא', { fontSize: '20px', fill: '#FFAA00' }).setOrigin(0.5);
+            let hint = scene.add.text(0, 200, 'Press a number to start the next level', { fontSize: '20px', fill: '#FFAA00' }).setOrigin(0.5);
             upgradeMenuContainer.add([bg, title, subtitle, ...upgradeOptionTexts, hint]);
         }
 
@@ -451,161 +451,161 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
         function showRunUpgradeMenu(scene) {
             let allUpgrades = [
                 {
-                    title: '+1 חיים',
-                    desc: 'מוסיף חיים מיידית ויכול להגדיל את המקסימום',
+                    title: '+1 Life',
+                    desc: 'Adds an instant life and can increase max health',
                     apply: () => {
                         health = Math.min(5, health + 1);
-                        if (healthText) healthText.setText('חיים: ' + health);
-                        centerText.setText('בחרת: +1 חיים').setVisible(true);
+                        if (healthText) healthText.setText('Health: ' + health);
+                        centerText.setText('Selected: +1 Life').setVisible(true);
                     }
                 },
                 {
-                    title: 'ירי מהיר יותר',
-                    desc: 'קצר את זמן הטעינה של הירי לשלב הבא',
+                    title: 'Faster Fire',
+                    desc: 'Shorten shoot cooldown for next level',
                     apply: () => {
                         if (tempUpgradeBackup.shootDelay === null) tempUpgradeBackup.shootDelay = shootDelay;
                         shootDelay = Math.max(100, shootDelay - 150);
-                        centerText.setText('בחרת: ירי מהיר יותר').setVisible(true);
+                        centerText.setText('Selected: Faster Fire').setVisible(true);
                     }
                 },
                 {
-                    title: 'מגן בועה',
-                    desc: 'מגן בלתי חדיר לשלב הבא',
+                    title: 'Bubble Shield',
+                    desc: 'Invincible shield for next level',
                     apply: (scene) => {
                         if (tempUpgradeBackup.isInvincible === null) tempUpgradeBackup.isInvincible = isInvincible;
                         isInvincible = true;
                         if (bubbleShield) bubbleShield.setAlpha(1);
-                        centerText.setText('בחרת: מגן בועה').setVisible(true);
+                        centerText.setText('Selected: Bubble Shield').setVisible(true);
                     }
                 },
                 {
-                    title: 'רחפן תומך',
-                    desc: 'רחפן שקיים לשלב הבא בלבד',
+                    title: 'Support Drone',
+                    desc: 'Drone lasts only for next level',
                     apply: () => {
                         if (tempUpgradeBackup.hasDrone === null) tempUpgradeBackup.hasDrone = hasDrone;
                         hasDrone = true;
-                        centerText.setText('בחרת: רחפן תומך').setVisible(true);
+                        centerText.setText('Selected: Support Drone').setVisible(true);
                     }
                 },
                 {
-                    title: 'ירי אולטימטיבי',
-                    desc: 'שלושה כדורי קרח בבת אחת לשלב הבא',
+                    title: 'Ultimate Shot',
+                    desc: 'Three ice shots at once for next level',
                     apply: () => {
                         if (tempUpgradeBackup.specialWeapon === null) tempUpgradeBackup.specialWeapon = specialWeapon;
                         if (tempUpgradeBackup.shootDelay === null) tempUpgradeBackup.shootDelay = shootDelay;
                         specialWeapon = 'ultimateIce';
                         shootDelay = 100;
                         if (player) player.setTint(0x00FFFF);
-                        centerText.setText('בחרת: ירי אולטימטיבי').setVisible(true);
+                        centerText.setText('Selected: Ultimate Shot').setVisible(true);
                     }
                 },
                 {
-                    title: 'החלמה מלאה',
-                    desc: 'שחזר את בריאותך לשיא',
+                    title: 'Full Heal',
+                    desc: 'Restore health to full',
                     apply: () => {
                         health = 5;
-                        if (healthText) healthText.setText('חיים: ' + health);
-                        centerText.setText('בחרת: החלמה מלאה').setVisible(true);
+                        if (healthText) healthText.setText('Health: ' + health);
+                        centerText.setText('Selected: Full Heal').setVisible(true);
                     }
                 },
                 {
-                    title: 'דאש מהיר יותר',
-                    desc: 'הדאש שלך מהיר משמעותית לשלב הבא',
+                    title: 'Faster Dash',
+                    desc: 'Your dash is much faster next level',
                     apply: () => {
                         if (tempUpgradeBackup.dashSpeed === null) tempUpgradeBackup.dashSpeed = dashSpeed;
                         dashSpeed = 1800;
-                        centerText.setText('בחרת: דאש מהיר יותר').setVisible(true);
+                        centerText.setText('Selected: Faster Dash').setVisible(true);
                     }
                 },
                 {
-                    title: 'ריצה מהירה',
-                    desc: 'מהירות התנועה שלך עולה לשלב הבא',
+                    title: 'Fast Run',
+                    desc: 'Movement speed increases for next level',
                     apply: () => {
                         if (tempUpgradeBackup.currentSpeed === null) tempUpgradeBackup.currentSpeed = currentSpeed;
                         currentSpeed = 450;
-                        centerText.setText('בחרת: ריצה מהירה').setVisible(true);
+                        centerText.setText('Selected: Fast Run').setVisible(true);
                     }
                 },
                 {
-                    title: 'קסם אש חזק',
-                    desc: 'שדרוג לזמן ארוך: ירי אש חזק עם קצב מהיר',
+                    title: 'Strong Fire Magic',
+                    desc: 'Long lasting upgrade: strong fast fire',
                     apply: () => {
                         specialWeapon = 'fire';
                         shootDelay = 200;
                         if (player) player.setTint(0xFF4500);
-                        centerText.setText('בחרת: קסם אש חזק').setVisible(true);
+                        centerText.setText('Selected: Strong Fire Magic').setVisible(true);
                     }
                 },
                 {
-                    title: 'סוד הדרקון',
-                    desc: 'שינוי מראה מרשים עם כוח קוסמי קל',
+                    title: 'Dragon Secret',
+                    desc: 'A flashy look with light cosmic power',
                     apply: () => {
                         playerSkin = true;
                         if (player) player.setTint(0xAA00FF);
-                        centerText.setText('בחרת: סוד הדרקון').setVisible(true);
+                        centerText.setText('Selected: Dragon Secret').setVisible(true);
                     }
                 },
                 {
-                    title: '+3 מטבעות דרקון',
-                    desc: 'קבל מטבעות נוספים לשימוש בחנות הקבועה',
+                    title: '+3 Dragon Coins',
+                    desc: 'Gain extra coins for the permanent shop',
                     apply: () => {
                         dragonCoins += 3;
-                        if (dragonCoinText) dragonCoinText.setText('מטבעות דרקון: ' + dragonCoins);
-                        centerText.setText('בחרת: +3 מטבעות דרקון').setVisible(true);
+                        if (dragonCoinText) dragonCoinText.setText('Dragon Coins: ' + dragonCoins);
+                        centerText.setText('Selected: +3 Dragon Coins').setVisible(true);
                     }
                 },
                 {
-                    title: '+2 חיים',
-                    desc: 'מוסיף חיים נוספים לשלב הבא (עד 5)',
+                    title: '+2 Lives',
+                    desc: 'Adds extra lives for next level (up to 5)',
                     apply: () => {
                         health = Math.min(5, health + 2);
-                        if (healthText) healthText.setText('חיים: ' + health);
-                        centerText.setText('בחרת: +2 חיים').setVisible(true);
+                        if (healthText) healthText.setText('Health: ' + health);
+                        centerText.setText('Selected: +2 Lives').setVisible(true);
                     }
                 },
                 {
-                    title: 'קפיצה עליונה',
-                    desc: 'השתמש בסופר קפיצה לשלב הבא',
+                    title: 'Super Jump',
+                    desc: 'Use a super jump for next level',
                     apply: (scene) => {
                         superJumpActive = true;
                         scene.time.delayedCall(10000, () => { superJumpActive = false; });
-                        centerText.setText('בחרת: קפיצה עליונה').setVisible(true);
+                        centerText.setText('Selected: Super Jump').setVisible(true);
                     }
                 },
                 {
-                    title: 'גרביטציה קלה',
-                    desc: 'המשקל שלך יורד לשלב הבא',
+                    title: 'Light Gravity',
+                    desc: 'Your weight lowers for next level',
                     apply: (scene) => {
                         if (tempUpgradeBackup.gravityY === null) tempUpgradeBackup.gravityY = scene.physics.world.gravity.y;
                         scene.physics.world.gravity.y = 300;
-                        centerText.setText('בחרת: גרביטציה קלה').setVisible(true);
+                        centerText.setText('Selected: Light Gravity').setVisible(true);
                     }
                 },
                 {
-                    title: 'אגף מהבהב',
-                    desc: 'ירי של טריפל קרח לשלב הבא',
+                    title: 'Shimmer Wing',
+                    desc: 'Triple ice shot next level',
                     apply: () => {
                         if (tempUpgradeBackup.specialWeapon === null) tempUpgradeBackup.specialWeapon = specialWeapon;
                         if (tempUpgradeBackup.shootDelay === null) tempUpgradeBackup.shootDelay = shootDelay;
                         specialWeapon = 'ultimateIce';
                         shootDelay = 150;
                         if (player) player.setTint(0x00FFFF);
-                        centerText.setText('בחרת: אגף מהבהב').setVisible(true);
+                        centerText.setText('Selected: Shimmer Wing').setVisible(true);
                     }
                 },
                 {
-                    title: 'מסכת ברק',
-                    desc: 'הפוך לאין-מכוסה למשך כל השלב',
+                    title: 'Lightning Mask',
+                    desc: 'Become invulnerable for the whole level',
                     apply: (scene) => {
                         if (tempUpgradeBackup.isInvincible === null) tempUpgradeBackup.isInvincible = isInvincible;
                         isInvincible = true;
                         if (bubbleShield) bubbleShield.setAlpha(1);
-                        centerText.setText('בחרת: מסכת ברק').setVisible(true);
+                        centerText.setText('Selected: Lightning Mask').setVisible(true);
                     }
                 },
                 {
-                    title: 'כוח מטאור',
-                    desc: 'זורק שלושה כדורים אדירים בתחילת השלב',
+                    title: 'Meteor Power',
+                    desc: 'Launches three giant projectiles at the start of the level',
                     apply: (scene) => {
                         ['-1','0','1'].forEach((offset) => {
                             let meteor = fireballs.create(player.x, player.y - 20, 'powerTex').setTint(0xFF6600);
@@ -613,42 +613,42 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
                             meteor.setVelocityX(player.flipX ? -400 : 400);
                             meteor.setVelocityY(-200 + parseInt(offset) * 80);
                         });
-                        centerText.setText('בחרת: כוח מטאור').setVisible(true);
+                        centerText.setText('Selected: Meteor Power').setVisible(true);
                     }
                 },
                 {
-                    title: 'ריקוד חצים',
-                    desc: 'היריות שלך נעשות מהירות יותר לזמן קצר',
+                    title: 'Arrow Dance',
+                    desc: 'Your shots move faster for a short time',
                     apply: () => {
                         if (tempUpgradeBackup.shootDelay === null) tempUpgradeBackup.shootDelay = shootDelay;
                         shootDelay = Math.max(100, shootDelay - 100);
-                        centerText.setText('בחרת: ריקוד חצים').setVisible(true);
+                        centerText.setText('Selected: Arrow Dance').setVisible(true);
                     }
                 },
                 {
-                    title: 'ריפוי מהיר',
-                    desc: 'בריאות מלאה והסרת צבע רע',
+                    title: 'Quick Heal',
+                    desc: 'Full health and remove bad tint',
                     apply: () => {
                         health = 5;
-                        if (healthText) healthText.setText('חיים: ' + health);
+                        if (healthText) healthText.setText('Health: ' + health);
                         if (player) player.clearTint();
-                        centerText.setText('בחרת: ריפוי מהיר').setVisible(true);
+                        centerText.setText('Selected: Quick Heal').setVisible(true);
                     }
                 },
                 {
-                    title: 'מעוף הדרקון',
-                    desc: 'השחקן טס גבוה יותר וקופץ חזק יותר לשלב הבא',
+                    title: 'Dragon Flight',
+                    desc: 'Player flies higher and jumps stronger next level',
                     apply: (scene) => {
                         superJumpActive = true;
                         if (tempUpgradeBackup.currentSpeed === null) tempUpgradeBackup.currentSpeed = currentSpeed;
                         currentSpeed = 320;
                         scene.time.delayedCall(10000, () => { superJumpActive = false; });
-                        centerText.setText('בחרת: מעוף הדרקון').setVisible(true);
+                        centerText.setText('Selected: Dragon Flight').setVisible(true);
                     }
                 },
                 {
-                    title: 'סערת קרח',
-                    desc: 'משלשל שלושה כדורי קרח חזקים בתחילת השלב',
+                    title: 'Ice Storm',
+                    desc: 'Launches three strong ice shots at level start',
                     apply: () => {
                         ['-1','0','1'].forEach((offset) => {
                             let ice = iceballs.create(player.x, player.y, 'iceTex');
@@ -656,23 +656,23 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
                             ice.setVelocityX(player.flipX ? -400 : 400);
                             ice.setVelocityY(parseInt(offset) * -100);
                         });
-                        centerText.setText('בחרת: סערת קרח').setVisible(true);
+                        centerText.setText('Selected: Ice Storm').setVisible(true);
                     }
                 },
                 {
-                    title: 'ערפל מהיר',
-                    desc: 'המשקל יורד והשחקן נע מהר יותר לשלב הבא',
+                    title: 'Swift Fog',
+                    desc: 'Weight drops and the player moves faster next level',
                     apply: (scene) => {
                         if (tempUpgradeBackup.gravityY === null) tempUpgradeBackup.gravityY = scene.physics.world.gravity.y;
                         if (tempUpgradeBackup.currentSpeed === null) tempUpgradeBackup.currentSpeed = currentSpeed;
                         scene.physics.world.gravity.y = 600;
                         currentSpeed = 380;
-                        centerText.setText('בחרת: ערפל מהיר').setVisible(true);
+                        centerText.setText('Selected: Swift Fog').setVisible(true);
                     }
                 },
                 {
-                    title: 'זריקת ברק',
-                    desc: 'יוצר שלושה פרוייקטילים חשמליים מיד',
+                    title: 'Lightning Throw',
+                    desc: 'Creates three electric projectiles instantly',
                     apply: () => {
                         ['-1','0','1'].forEach((offset) => {
                             let bolt = fireballs.create(player.x, player.y, 'plasmaTex');
@@ -680,54 +680,54 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
                             bolt.setVelocityX(player.flipX ? -400 : 400);
                             bolt.setVelocityY(parseInt(offset) * -100);
                         });
-                        centerText.setText('בחרת: זריקת ברק').setVisible(true);
+                        centerText.setText('Selected: Lightning Throw').setVisible(true);
                     }
                 },
                 {
-                    title: 'צווארון פלדה',
-                    desc: '+1 חיים לשלב הבא',
+                    title: 'Steel Collar',
+                    desc: '+1 Life for next level',
                     apply: () => {
                         health = Math.min(5, health + 1);
-                        if (healthText) healthText.setText('חיים: ' + health);
-                        centerText.setText('בחרת: צווארון פלדה').setVisible(true);
+                        if (healthText) healthText.setText('Health: ' + health);
+                        centerText.setText('Selected: Steel Collar').setVisible(true);
                     }
                 },
                 {
-                    title: 'בוסט התחמקות',
-                    desc: 'מהירות התנועה עולה לשלב הבא',
+                    title: 'Dodge Boost',
+                    desc: 'Movement speed increases for next level',
                     apply: () => {
                         if (tempUpgradeBackup.currentSpeed === null) tempUpgradeBackup.currentSpeed = currentSpeed;
                         currentSpeed = 420;
-                        centerText.setText('בחרת: בוסט התחמקות').setVisible(true);
+                        centerText.setText('Selected: Dodge Boost').setVisible(true);
                     }
                 },
                 {
-                    title: 'כוח קריסטל',
-                    desc: 'הירי הופך לקרח מהיר לשלב הבא',
+                    title: 'Crystal Power',
+                    desc: 'Shooting becomes fast ice next level',
                     apply: () => {
                         if (tempUpgradeBackup.specialWeapon === null) tempUpgradeBackup.specialWeapon = specialWeapon;
                         if (tempUpgradeBackup.shootDelay === null) tempUpgradeBackup.shootDelay = shootDelay;
                         specialWeapon = 'ice';
                         shootDelay = 200;
                         if (player) player.setTint(0x00FFFF);
-                        centerText.setText('בחרת: כוח קריסטל').setVisible(true);
+                        centerText.setText('Selected: Crystal Power').setVisible(true);
                     }
                 },
                 {
-                    title: 'סחרור קרח',
-                    desc: 'ירי של שלושה כדורים בשלב הבא',
+                    title: 'Ice Spin',
+                    desc: 'Shoots three bullets next level',
                     apply: () => {
                         if (tempUpgradeBackup.specialWeapon === null) tempUpgradeBackup.specialWeapon = specialWeapon;
                         if (tempUpgradeBackup.shootDelay === null) tempUpgradeBackup.shootDelay = shootDelay;
                         specialWeapon = 'ultimateIce';
                         shootDelay = 120;
                         if (player) player.setTint(0x00FFFF);
-                        centerText.setText('בחרת: סחרור קרח').setVisible(true);
+                        centerText.setText('Selected: Ice Spin').setVisible(true);
                     }
                 },
                 {
-                    title: 'מטען אדיר',
-                    desc: 'משגר חמש כדורים רחבים בתחילת השלב',
+                    title: 'Massive Charge',
+                    desc: 'Fires five wide projectiles at level start',
                     apply: () => {
                         for (let i = -2; i <= 2; i++) {
                             let blast = fireballs.create(player.x, player.y, 'powerTex').setTint(0xFF5500);
@@ -735,29 +735,29 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
                             blast.setVelocityX(i * 120);
                             blast.setVelocityY(-200);
                         }
-                        centerText.setText('בחרת: מטען אדיר').setVisible(true);
+                        centerText.setText('Selected: Massive Charge').setVisible(true);
                     }
                 },
                 {
-                    title: 'התחייבות',
-                    desc: 'מגן בלתי חדיר לשלב הבא',
+                    title: 'Commitment',
+                    desc: 'Invincible shield for next level',
                     apply: (scene) => {
                         if (tempUpgradeBackup.isInvincible === null) tempUpgradeBackup.isInvincible = isInvincible;
                         isInvincible = true;
                         if (bubbleShield) bubbleShield.setAlpha(1);
-                        centerText.setText('בחרת: התחייבות').setVisible(true);
+                        centerText.setText('Selected: Commitment').setVisible(true);
                     }
                 },
                 {
-                    title: 'כופת אש',
-                    desc: 'הירי הופך לאש מהירה לשלב הבא',
+                    title: 'Fireburst',
+                    desc: 'Shooting becomes fast fire next level',
                     apply: () => {
                         if (tempUpgradeBackup.specialWeapon === null) tempUpgradeBackup.specialWeapon = specialWeapon;
                         if (tempUpgradeBackup.shootDelay === null) tempUpgradeBackup.shootDelay = shootDelay;
                         specialWeapon = 'fire';
                         shootDelay = 120;
                         if (player) player.setTint(0xFF4500);
-                        centerText.setText('בחרת: כופת אש').setVisible(true);
+                        centerText.setText('Selected: Fireburst').setVisible(true);
                     }
                 }
             ];
@@ -788,25 +788,25 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
             scene.time.delayedCall(100, () => setupLevel(scene, currentLevel + 1));
         }
 
-        // --- מערכת חנות מושלמת (לא פוגעת בכלום) ---
+        // --- Permanent shop system (does not interfere) ---
         function createShop(scene) {
             shopContainer = scene.add.container(400, 300).setScrollFactor(0).setDepth(1000).setVisible(false);
             let bg = scene.add.rectangle(0, 0, 500, 450, 0x111111, 0.95).setStrokeStyle(5, 0xFFD700);
-            let title = scene.add.text(0, -180, '🌟 החנות של הדרקון 🌟', { fontSize: '32px', fill: '#FFD700', fontStyle: 'bold' }).setOrigin(0.5);
-            let subtitle = scene.add.text(0, -140, 'לחץ על המספר כדי לקנות', { fontSize: '18px', fill: '#AAAAAA' }).setOrigin(0.5);
+            let title = scene.add.text(0, -180, '🌟 Dragon Shop 🌟', { fontSize: '32px', fill: '#FFD700', fontStyle: 'bold' }).setOrigin(0.5);
+            let subtitle = scene.add.text(0, -140, 'Press the number to buy', { fontSize: '18px', fill: '#AAAAAA' }).setOrigin(0.5);
             
             shopItemTexts = [
-                scene.add.text(-220, -160, `1. רובה קרח מהיר [${getInGamePrice(300)} נק\']`, { fontSize: '22px', fill: '#00FFFF' }),
-                scene.add.text(-220, -120, `2. שריון זהב (+5 חיים) [${getInGamePrice(500)} נק\']`, { fontSize: '22px', fill: '#FFD700' }),
-                scene.add.text(-220, -80, `3. מגן בועה זמני [${getInGamePrice(200)} נק\']`, { fontSize: '22px', fill: '#FFFFFF' }),
-                scene.add.text(-220, -40, `4. רחפן תקיפה מלווה [${getInGamePrice(800)} נק\']`, { fontSize: '22px', fill: '#FF00FF' }),
-                scene.add.text(-220, 0, `5. תותח אש חזק [${getInGamePrice(1000)} נק\']`, { fontSize: '22px', fill: '#FF4500' }),
-                scene.add.text(-220, 40, `6. סקין סודי לשחקן [${getInGamePrice(700)} נק\']`, { fontSize: '22px', fill: '#AA00FF' }),
-                scene.add.text(-220, 80, `7. קסם קרח אולטימטיבי [${getInGamePrice(1200)} נק\']`, { fontSize: '22px', fill: '#00FFFF' }),
-                scene.add.text(-220, 120, `8. לשדרג מראה דרקון [${getInGamePrice(900)} נק\']`, { fontSize: '22px', fill: '#FF00FF' })
+                scene.add.text(-220, -160, `1. Fast Ice Rifle [${getInGamePrice(300)} coins]`, { fontSize: '22px', fill: '#00FFFF' }),
+                scene.add.text(-220, -120, `2. Gold Armor (+5 Health) [${getInGamePrice(500)} coins]`, { fontSize: '22px', fill: '#FFD700' }),
+                scene.add.text(-220, -80, `3. Temporary Bubble Shield [${getInGamePrice(200)} coins]`, { fontSize: '22px', fill: '#FFFFFF' }),
+                scene.add.text(-220, -40, `4. Escort Attack Drone [${getInGamePrice(800)} coins]`, { fontSize: '22px', fill: '#FF00FF' }),
+                scene.add.text(-220, 0, `5. Strong Fire Cannon [${getInGamePrice(1000)} coins]`, { fontSize: '22px', fill: '#FF4500' }),
+                scene.add.text(-220, 40, `6. Secret Player Skin [${getInGamePrice(700)} coins]`, { fontSize: '22px', fill: '#AA00FF' }),
+                scene.add.text(-220, 80, `7. Ultimate Ice Magic [${getInGamePrice(1200)} coins]`, { fontSize: '22px', fill: '#00FFFF' }),
+                scene.add.text(-220, 120, `8. Upgrade Dragon Look [${getInGamePrice(900)} coins]`, { fontSize: '22px', fill: '#FF00FF' })
             ];
 
-            let closeText = scene.add.text(0, 190, 'לחץ N כדי לסגור ולחזור', { fontSize: '20px', fill: '#FF0000', fontStyle: 'bold' }).setOrigin(0.5);
+            let closeText = scene.add.text(0, 190, 'Press N to close and return', { fontSize: '20px', fill: '#FF0000', fontStyle: 'bold' }).setOrigin(0.5);
             shopContainer.add([bg, title, subtitle, ...shopItemTexts, closeText]);
 
             scene.input.keyboard.on('keydown-ONE', () => buyItem(scene, 1, 300));
@@ -822,14 +822,14 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
         function createPermanentShop(scene) {
             upgradeShopContainer = scene.add.container(400, 300).setScrollFactor(0).setDepth(1001).setVisible(false);
             let bg = scene.add.rectangle(0, 0, 520, 520, 0x101020, 0.96).setStrokeStyle(5, 0x00FFCC);
-            let title = scene.add.text(0, -220, '🏰 חנות שדרוגים קבועה', { fontSize: '30px', fill: '#00FFCC', fontStyle: 'bold' }).setOrigin(0.5);
-            let subtitle = scene.add.text(0, -180, 'לחץ 1/2/3 כדי לקנות שדרוגים קבועים', { fontSize: '18px', fill: '#AAAAAA' }).setOrigin(0.5);
+            let title = scene.add.text(0, -220, '🏰 Permanent Upgrade Shop', { fontSize: '30px', fill: '#00FFCC', fontStyle: 'bold' }).setOrigin(0.5);
+            let subtitle = scene.add.text(0, -180, 'Press 1/2/3 to buy permanent upgrades', { fontSize: '18px', fill: '#AAAAAA' }).setOrigin(0.5);
             let items = [
-                scene.add.text(-220, -80, '1. +1 חיים בתחילת המשחק [500 מטבעות דרקון]', { fontSize: '20px', fill: '#FFD700', wordWrap: { width: 440 } }),
-                scene.add.text(-220, -20, '2. דאש ארוך יותר [700 מטבעות דרקון]', { fontSize: '20px', fill: '#00FFFF', wordWrap: { width: 440 } }),
-                scene.add.text(-220, 40, '3. 20% הנחה בחנות במשחק [600 מטבעות דרקון]', { fontSize: '20px', fill: '#FFAA00', wordWrap: { width: 440 } }),
+                scene.add.text(-220, -80, '1. +1 Life at game start [500 Dragon Coins]', { fontSize: '20px', fill: '#FFD700', wordWrap: { width: 440 } }),
+                scene.add.text(-220, -20, '2. Longer Dash [700 Dragon Coins]', { fontSize: '20px', fill: '#00FFFF', wordWrap: { width: 440 } }),
+                scene.add.text(-220, 40, '3. 20% discount in shop [600 Dragon Coins]', { fontSize: '20px', fill: '#FFAA00', wordWrap: { width: 440 } }),
             ];
-            let foot = scene.add.text(0, 220, 'לחץ B כדי לסגור ולחזור', { fontSize: '20px', fill: '#FF0000', fontStyle: 'bold' }).setOrigin(0.5);
+            let foot = scene.add.text(0, 220, 'Press B to close and return', { fontSize: '20px', fill: '#FF0000', fontStyle: 'bold' }).setOrigin(0.5);
             upgradeShopContainer.add([bg, title, subtitle, ...items, foot]);
 
             scene.input.keyboard.on('keydown-ONE', () => buyPermanentItem(scene, 1, 500));
@@ -867,7 +867,7 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
             if (id === 1) {
                 permanentUpgrades.extraLife = true;
                 health = Math.max(health, 4);
-                if (healthText) healthText.setText('חיים: ' + health);
+                if (healthText) healthText.setText('Health: ' + health);
             }
             if (id === 2) {
                 permanentUpgrades.longDash = true;
@@ -884,7 +884,7 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
             if (isShopOpen) {
                 updateShopLabels();
                 gameActive = false;
-                scene.physics.world.pause(); // מקפיא את המשחק לגמרי!
+                scene.physics.world.pause(); // Pauses the game completely!
             } else {
                 scene.physics.world.resume();
                 if (health > 0 && !centerText.visible) gameActive = true;
@@ -895,19 +895,19 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
             if (tasksOverlay && tasksOverlay.visible) return;
             let actualPrice = getInGamePrice(price);
             if (!isShopOpen || score < actualPrice) {
-                if (isShopOpen) SoundEngine.play('hit'); // אין מספיק כסף
+                if (isShopOpen) SoundEngine.play('hit'); // not enough money
                 return;
             }
             score -= actualPrice;
-            scoreText.setText('ניקוד: ' + score);
+            scoreText.setText('Score: ' + score);
             SoundEngine.play('coin');
-            explodeParticles(scene, 400, 300, 0xFFD700, 40); // אפקט קנייה
+            explodeParticles(scene, 400, 300, 0xFFD700, 40); // purchase effect
 
             if (id === 1) {
                 shootDelay = 150;
                 specialWeapon = 'ice';
             }
-            if (id === 2) { health += 5; healthText.setText('חיים: ' + health); player.setTint(0xFFD700); }
+            if (id === 2) { health += 5; healthText.setText('Health: ' + health); player.setTint(0xFFD700); }
             if (id === 3) { isInvincible = true; bubbleShield.setAlpha(1); scene.time.delayedCall(10000, () => { isInvincible = false; bubbleShield.setAlpha(0); }); }
             if (id === 4 && !hasDrone) { 
                 hasDrone = true; 
@@ -944,8 +944,8 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
             scene.physics.world.timeScale = 1; reverseControls = false; gravityFlipped = false; isTiny = false; bombActive = false; bombText.setVisible(false); superJumpActive = false; canJumpTroll = true; currentSpeed = 250;
             dashSpeed = permanentUpgrades.longDash ? 1600 : 1000;
             health = permanentUpgrades.extraLife ? 4 : 3;
-            if(levelText) levelText.setText('שלב: ' + level);
-            if(healthText) healthText.setText('חיים: ' + health);
+            if(levelText) levelText.setText('Level: ' + level);
+            if(healthText) healthText.setText('Health: ' + health);
             taskState.coinsRun = 0;
             taskState.enemiesRun = 0;
             taskState.noDamageRun = true;
@@ -1106,7 +1106,7 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
             activeColliders.push(scene.physics.add.overlap(player, deathGhost, (p, g) => { takeDamage(scene); g.x = 3000; g.y = 100; }));
 
             scene.physics.add.collider(player, springs, (p, s) => { p.setVelocityY(gravityFlipped ? 1100 : -1100); SoundEngine.play('coin'); });
-            scene.physics.add.collider(player, healSprings, (p, s) => { p.setVelocityY(gravityFlipped ? 900 : -900); if(health < 5) health++; healthText.setText('חיים: ' + health); SoundEngine.play('coin'); });
+            scene.physics.add.collider(player, healSprings, (p, s) => { p.setVelocityY(gravityFlipped ? 900 : -900); if(health < 5) health++; healthText.setText('Health: ' + health); SoundEngine.play('coin'); });
             scene.physics.add.collider(player, badSprings, (p, s) => { p.setVelocityY(gravityFlipped ? 500 : -500); takeDamage(scene); scene.tweens.add({targets: s, scaleY: 0.5, duration: 50, yoyo: true}); }); 
 
             if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal, (p, f) => { explodeParticles(scene, f.x, f.y, 0xFF0000, 30); f.destroy(); SoundEngine.play('hit'); for(let i=0; i<3; i++) enemies.create(f.x + (i*30 - 30), f.y - 50, 'enemyTex').setVelocityX(150).setBounceX(1).setCollideWorldBounds(true); }); }
@@ -1125,25 +1125,25 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
 
             scene.physics.add.overlap(player, powerUps, (p, pw) => {
                 let type = pw.getData('type'); explodeParticles(scene, pw.x, pw.y, pw.tintTopLeft); pw.destroy(); SoundEngine.play('coin');
-                if(type === 'poison') { score = Math.max(0, score - 50); scoreText.setText('ניקוד: ' + score); reverseControls = true; player.setTint(0x800080); centerText.setText('שליטה הפוכה!').setVisible(true).setFill('#800080'); scene.time.delayedCall(5000, () => { reverseControls = false; player.clearTint(); if(gameActive) centerText.setVisible(false); }); } 
-                else { score += 50; scoreText.setText('ניקוד: ' + score); if(type === 'health') { health++; healthText.setText('חיים: ' + health); } else if(type === 'star') { isInvincible = true; player.setTint(0xFFFF00); scene.time.delayedCall(5000, () => { isInvincible = false; player.clearTint(); }); } else if(type === 'speed') { currentSpeed = 450; player.setTint(0x00FFFF); scene.time.delayedCall(5000, () => { currentSpeed = 250; player.clearTint(); }); } }
+                if(type === 'poison') { score = Math.max(0, score - 50); scoreText.setText('Score: ' + score); reverseControls = true; player.setTint(0x800080); centerText.setText('Reverse Controls!').setVisible(true).setFill('#800080'); scene.time.delayedCall(5000, () => { reverseControls = false; player.clearTint(); if(gameActive) centerText.setVisible(false); }); } 
+                else { score += 50; scoreText.setText('Score: ' + score); if(type === 'health') { health++; healthText.setText('Health: ' + health); } else if(type === 'star') { isInvincible = true; player.setTint(0xFFFF00); scene.time.delayedCall(5000, () => { isInvincible = false; player.clearTint(); }); } else if(type === 'speed') { currentSpeed = 450; player.setTint(0x00FFFF); scene.time.delayedCall(5000, () => { currentSpeed = 250; player.clearTint(); }); } }
             });
 
             scene.physics.add.collider(iceballs, [ground, platforms], (i) => i.destroy());
             scene.physics.add.collider(iceballs, enemies, (i, e) => {
                 i.destroy(); SoundEngine.play('hit');
-                if(e.getData('isGiant')) { e.setData('hp', e.getData('hp') - 1); e.setTint(0x00FFFF); scene.time.delayedCall(100, () => e.clearTint()); if(e.getData('hp') <= 0) { e.destroy(); score+=50; scoreText.setText('ניקוד: ' + score); taskState.enemiesRun += 1; if (taskState.enemiesRun >= 8) taskState.completed[2] = true; updateTaskOverlay(); explodeParticles(scene, e.x, e.y, 0xFFFFFF, 30); } } 
-                else { e.destroy(); score+=30; scoreText.setText('ניקוד: ' + score); taskState.enemiesRun += 1; if (taskState.enemiesRun >= 8) taskState.completed[2] = true; updateTaskOverlay(); explodeParticles(scene, e.x, e.y, Math.random()*0xFFFFFF, 20); }
+                if(e.getData('isGiant')) { e.setData('hp', e.getData('hp') - 1); e.setTint(0x00FFFF); scene.time.delayedCall(100, () => e.clearTint()); if(e.getData('hp') <= 0) { e.destroy(); score+=50; scoreText.setText('Score: ' + score); taskState.enemiesRun += 1; if (taskState.enemiesRun >= 8) taskState.completed[2] = true; updateTaskOverlay(); explodeParticles(scene, e.x, e.y, 0xFFFFFF, 30); } } 
+                else { e.destroy(); score+=30; scoreText.setText('Score: ' + score); taskState.enemiesRun += 1; if (taskState.enemiesRun >= 8) taskState.completed[2] = true; updateTaskOverlay(); explodeParticles(scene, e.x, e.y, Math.random()*0xFFFFFF, 20); }
             });
             scene.physics.add.collider(iceballs, bats, (i, b) => { b.destroy(); i.destroy(); score+=40; SoundEngine.play('hit'); explodeParticles(scene, b.x, b.y, 0x00FFFF, 10); });
             
             scene.physics.add.collider(player, enemies, (p, e) => {
                 if ((!gravityFlipped && p.body.touching.down && e.body.touching.up && p.body.velocity.y > 0) || (gravityFlipped && p.body.touching.up && e.body.touching.down && p.body.velocity.y < 0)) { 
                     p.setVelocityY(gravityFlipped ? (superJumpActive ? 900 : 600) : (isTiny ? -250 : (superJumpActive ? -600 : -350)));
-                    if(e.getData('isGiant')) { e.setData('hp', e.getData('hp') - 1); e.setTint(0xFF0000); scene.time.delayedCall(100, () => e.clearTint()); SoundEngine.play('hit'); if(e.getData('hp') <= 0) { e.destroy(); score+=50; taskState.enemiesRun += 1; if (taskState.enemiesRun >= 8) taskState.completed[2] = true; scoreText.setText('ניקוד: ' + score); updateTaskOverlay(); explodeParticles(scene, e.x, e.y, 0xFFFFFF, 30); } }
-                    else { e.destroy(); score+=20; taskState.enemiesRun += 1; if (taskState.enemiesRun >= 8) taskState.completed[2] = true; scoreText.setText('ניקוד: ' + score); updateTaskOverlay(); SoundEngine.play('jump'); explodeParticles(scene, e.x, e.y, Math.random()*0xFFFFFF, 20); } 
+                    if(e.getData('isGiant')) { e.setData('hp', e.getData('hp') - 1); e.setTint(0xFF0000); scene.time.delayedCall(100, () => e.clearTint()); SoundEngine.play('hit'); if(e.getData('hp') <= 0) { e.destroy(); score+=50; taskState.enemiesRun += 1; if (taskState.enemiesRun >= 8) taskState.completed[2] = true; scoreText.setText('Score: ' + score); updateTaskOverlay(); explodeParticles(scene, e.x, e.y, 0xFFFFFF, 30); } }
+                    else { e.destroy(); score+=20; taskState.enemiesRun += 1; if (taskState.enemiesRun >= 8) taskState.completed[2] = true; scoreText.setText('Score: ' + score); updateTaskOverlay(); SoundEngine.play('jump'); explodeParticles(scene, e.x, e.y, Math.random()*0xFFFFFF, 20); } 
                 } 
-                else { takeDamage(scene); if(e.texture.key === 'thiefTex') { hasIcePower = false; centerText.setText('גנבו לך את הקרח!').setVisible(true).setFill('#FF0000'); scene.time.delayedCall(5000, () => { hasIcePower = true; if(gameActive) centerText.setVisible(false); }); } } 
+                else { takeDamage(scene); if(e.texture.key === 'thiefTex') { hasIcePower = false; centerText.setText('Your ice was stolen!').setVisible(true).setFill('#FF0000'); scene.time.delayedCall(5000, () => { hasIcePower = true; if(gameActive) centerText.setVisible(false); }); } } 
             });
             scene.physics.add.overlap(player, bats, (p, b) => { takeDamage(scene); b.destroy(); healBoss(scene, 1); }); 
             scene.physics.add.overlap(player, missiles, (p, m) => { takeDamage(scene); explodeParticles(scene, m.x, m.y, 0xFF0000, 20); m.destroy(); });
@@ -1166,11 +1166,11 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
                 scene.physics.add.overlap(player, fireballs, (p, f) => { f.destroy(); takeDamage(scene); });
             }
 
-            scene.physics.add.overlap(player, coinsGroup, (p, c) => { let val = c.getData('diamond') ? 100 : 10; c.destroy(); score += val; scoreText.setText('ניקוד: ' + score); SoundEngine.play('coin'); taskState.coinsRun += 1; if (taskState.coinsRun >= 40) taskState.completed[1] = true; updateTaskOverlay(); });
+            scene.physics.add.overlap(player, coinsGroup, (p, c) => { let val = c.getData('diamond') ? 100 : 10; c.destroy(); score += val; scoreText.setText('Score: ' + score); SoundEngine.play('coin'); taskState.coinsRun += 1; if (taskState.coinsRun >= 40) taskState.completed[1] = true; updateTaskOverlay(); });
         }
 
         function update(time) {
-            if (!gameActive && !isShopOpen) return; // לא לבצע כשהחנות פתוחה
+            if (!gameActive && !isShopOpen) return; // do not run while shop is open
 
             if(deathGhost && deathGhost.active) { this.physics.moveToObject(deathGhost, player, 60); }
             if(pet) { pet.x += (player.x - 30 - pet.x) * 0.05; pet.y += (player.y - 30 - pet.y) * 0.05; }
@@ -1203,12 +1203,12 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
 
             if (Math.abs(player.body.velocity.x) > 10 && Math.random() > 0.5) { let ghost = this.add.image(player.x, player.y, player.texture.key); ghost.setTint(hasIcePower ? 0x00FFFF : 0x00FF00); ghost.setAlpha(0.5); ghost.flipX = player.flipX; this.tweens.add({ targets: ghost, alpha: 0, duration: 400, onComplete: () => ghost.destroy() }); }
 
-            if (Phaser.Input.Keyboard.JustDown(gravToggleKey) && score >= 50) { score -= 50; scoreText.setText('ניקוד: ' + score); SoundEngine.play('coin'); flipGravity(this, 3000); }
+            if (Phaser.Input.Keyboard.JustDown(gravToggleKey) && score >= 50) { score -= 50; scoreText.setText('Score: ' + score); SoundEngine.play('coin'); flipGravity(this, 3000); }
             if (Phaser.Input.Keyboard.JustDown(superJumpKey)) { superJumpActive = true; SoundEngine.play('coin'); this.time.delayedCall(5000, () => superJumpActive = false); }
             if (Phaser.Input.Keyboard.JustDown(shrinkKey)) { isTiny = !isTiny; player.setScale(isTiny ? 0.5 : 1); SoundEngine.play('coin'); }
             if (Phaser.Input.Keyboard.JustDown(meteorKey)) { let m = fireballs.create(player.x + (player.flipX ? -300 : 300), 0, 'powerTex').setTint(0xFF0000); m.body.allowGravity = true; m.setVelocityY(500); SoundEngine.play('shoot'); }
             
-            // ירי עם המשתנה החדש של shootDelay (משתדרג דרך החנות)
+            // shooting with new shootDelay variable (upgrades via shop)
             if (Phaser.Input.Keyboard.JustDown(shootKey) && hasIcePower && time > lastShotTime + shootDelay) {
                 lastShotTime = time;
                 SoundEngine.play('shoot');
@@ -1231,16 +1231,16 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
             if (Phaser.Input.Keyboard.JustDown(dashKey) && canDash) { canDash = false; player.setVelocityX(player.flipX ? -dashSpeed : dashSpeed); SoundEngine.play('shoot'); this.time.delayedCall(1000, () => canDash = true); }
             if (Phaser.Input.Keyboard.JustDown(coinRainKey) && !usedCoinRain) { usedCoinRain = true; SoundEngine.play('coin'); for(let i=0; i<20; i++) { let c = coinsGroup.create(player.x + Phaser.Math.Between(-200, 200), player.y - Phaser.Math.Between(300, 600), 'coinTex'); c.setBounce(0.5); c.setCollideWorldBounds(true); } }
 
-            // לוגיקת רחפן תקיפה (חדש!)
+            // attack drone logic (new!)
             if (hasDrone && attackDrone && attackDrone.active) {
-                // גורם לרחפן לרחף באופן חלק מעל השחקן
+                // makes the drone hover smoothly above the player
                 attackDrone.x += ((player.x + (player.flipX ? 40 : -40)) - attackDrone.x) * 0.1;
                 attackDrone.y += ((player.y - 60) - attackDrone.y) * 0.1;
 
-                // יורה על האויב הקרוב ביותר
+                // shoots the nearest enemy
                 if (time > lastDroneShot + 1000) {
                     let nearestEnemy = null;
-                    let closestDist = 400; // טווח הירי של הרחפן
+                    let closestDist = 400; // drone shooting range
                     enemies.getChildren().concat(bats.getChildren()).forEach(e => {
                         let dist = Phaser.Math.Distance.Between(attackDrone.x, attackDrone.y, e.x, e.y);
                         if (dist < closestDist) { closestDist = dist; nearestEnemy = e; }
@@ -1252,10 +1252,10 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
                         plasma.body.allowGravity = false;
                         this.physics.moveToObject(plasma, nearestEnemy, 600);
                         SoundEngine.play('shoot');
-                        // מגדיר שאם הפלזמה פוגעת באויב הוא מת
-                        this.physics.add.collider(plasma, enemies, (p, e) => { p.destroy(); e.destroy(); score+=30; scoreText.setText('ניקוד: ' + score); explodeParticles(this, e.x, e.y, 0xFF00FF, 20); });
-                        this.physics.add.collider(plasma, bats, (p, e) => { p.destroy(); e.destroy(); score+=40; scoreText.setText('ניקוד: ' + score); explodeParticles(this, e.x, e.y, 0xFF00FF, 20); });
-                        this.time.delayedCall(1500, () => { if(plasma.active) plasma.destroy(); }); // מחיקת פלזמה אם לא פגעה
+                        // define that if the plasma hits an enemy it dies
+                        this.physics.add.collider(plasma, enemies, (p, e) => { p.destroy(); e.destroy(); score+=30; scoreText.setText('Score: ' + score); explodeParticles(this, e.x, e.y, 0xFF00FF, 20); });
+                        this.physics.add.collider(plasma, bats, (p, e) => { p.destroy(); e.destroy(); score+=40; scoreText.setText('Score: ' + score); explodeParticles(this, e.x, e.y, 0xFF00FF, 20); });
+                        this.time.delayedCall(1500, () => { if(plasma.active) plasma.destroy(); }); // remove plasma if it didn't hit
                     }
                 }
             }
@@ -1276,7 +1276,7 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
                     boss.mouth.y = boss.y + 10;
                 }
                 bossTalk.setPosition(boss.x, boss.y - 80);
-                if (player.x > 2200) bossHealthText.setText('הדרקון: ' + boss.getData('hp') + '/10'); else bossHealthText.setText('');
+                if (player.x > 2200) bossHealthText.setText('Dragon: ' + boss.getData('hp') + '/10'); else bossHealthText.setText('');
             }
             else if (currentLevel === 5 && trueBoss && trueBoss.getData('isAlive')) {
                 trueBoss.setFlipX(player.x < trueBoss.x);
@@ -1295,7 +1295,7 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
                     trueBoss.mouth.y = trueBoss.y + 20;
                 }
                 bossTalk.setPosition(trueBoss.x, trueBoss.y - 80);
-                if (player.x > 2000) bossHealthText.setText('שד הריק: ' + trueBoss.getData('hp') + '/20'); else bossHealthText.setText('');
+                if (player.x > 2000) bossHealthText.setText('Void Demon: ' + trueBoss.getData('hp') + '/20'); else bossHealthText.setText('');
             } 
             else bossHealthText.setText('');
 
@@ -1327,7 +1327,7 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
                     trueBoss = null;
                 }
                 if(currentLevel === 3) {
-                    centerText.setText('הבסת את הדרקון! מתקדם...').setVisible(true);
+                    centerText.setText('You defeated the dragon! Advancing...').setVisible(true);
                     scene.time.delayedCall(2000, () => {
                         centerText.setVisible(false);
                         setupLevel(scene, 4);
@@ -1348,7 +1348,7 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
 
             const videoElement = document.getElementById('victory-video');
             if (videoElement) {
-                videoElement.src = encodeURI('PixVerse_V6_Image_Text_720P_תן_לי_סרטון_אנימצי.mp4');
+                videoElement.src = encodeURI('victory_video.mp4');
                 videoElement.style.display = 'block';
                 videoElement.currentTime = 0;
                 videoElement.loop = false;
@@ -1365,7 +1365,7 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
                 }
             }
 
-            victoryText = scene.add.text(400, 540, 'נצחת את הדרקון הנורא!', { fontSize: '32px', fill: '#00FF00', fontStyle: 'bold', align: 'center', wordWrap: { width: 740 } }).setOrigin(0.5).setDepth(1202).setVisible(false);
+            victoryText = scene.add.text(400, 540, 'You defeated the terrible dragon!', { fontSize: '32px', fill: '#00FF00', fontStyle: 'bold', align: 'center', wordWrap: { width: 740 } }).setOrigin(0.5).setDepth(1202).setVisible(false);
             scene.time.delayedCall(1000, () => {
                 if (victoryText && !victoryText.visible) {
                     victoryText.setVisible(true);
@@ -1380,7 +1380,7 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
 
         function flipGravity(scene, duration) {
             if(!gameActive || gravityFlipped) return;
-            gravityFlipped = true; scene.physics.world.gravity.y = -1000; player.setTint(0x800080); centerText.setText('כוח משיכה הפוך!').setVisible(true).setFill('#800080');
+            gravityFlipped = true; scene.physics.world.gravity.y = -1000; player.setTint(0x800080); centerText.setText('Reverse Gravity!').setVisible(true).setFill('#800080');
             scene.time.delayedCall(duration, () => { gravityFlipped = false; scene.physics.world.gravity.y = 1000; player.clearTint(); if(gameActive) centerText.setVisible(false); });
         }
 
@@ -1389,13 +1389,13 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
         }
 
         function updatePermanentUI() {
-            if(dragonCoinText) dragonCoinText.setText('מטבעות דרקון: ' + dragonCoins);
+            if(dragonCoinText) dragonCoinText.setText('Dragon Coins: ' + dragonCoins);
             if(permUpgradesText) {
                 let active = [];
-                if(permanentUpgrades.extraLife) active.push('+1 חיים');
-                if(permanentUpgrades.longDash) active.push('דאש ארוך');
-                if(permanentUpgrades.shopDiscount) active.push('הנחות חנות');
-                permUpgradesText.setText('שדרוגים: ' + (active.length ? active.join(' | ') : 'אין'));
+                if(permanentUpgrades.extraLife) active.push('+1 Life');
+                if(permanentUpgrades.longDash) active.push('Long Dash');
+                if(permanentUpgrades.shopDiscount) active.push('Shop Discounts');
+                permUpgradesText.setText('Upgrades: ' + (active.length ? active.join(' | ') : 'None'));
             }
         }
 
@@ -1404,7 +1404,7 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
                 localStorage.setItem('dragonCoins', dragonCoins.toString());
                 localStorage.setItem('permanentUpgrades', JSON.stringify(permanentUpgrades));
             } catch(e) {
-                console.warn('לא ניתן לשמור ב-localStorage', e);
+                console.warn('Could not save to localStorage', e);
             }
         }
 
@@ -1418,32 +1418,32 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
                     permanentUpgrades = Object.assign(permanentUpgrades, parsed);
                 }
             } catch(e) {
-                console.warn('לא ניתן לטעון נתונים מ-localStorage', e);
+                console.warn('Could not load data from localStorage', e);
             }
         }
 
         function updateShopLabels() {
             if (!shopItemTexts || !shopItemTexts.length) return;
-            shopItemTexts[0].setText(`1. רובה קרח מהיר [${getInGamePrice(300)} נק']`);
-            shopItemTexts[1].setText(`2. שריון זהב (+5 חיים) [${getInGamePrice(500)} נק']`);
-            shopItemTexts[2].setText(`3. מגן בועה זמני [${getInGamePrice(200)} נק']`);
-            shopItemTexts[3].setText(`4. רחפן תקיפה מלווה [${getInGamePrice(800)} נק']`);
-            shopItemTexts[4].setText(`5. תותח אש חזק [${getInGamePrice(1000)} נק']`);
-            shopItemTexts[5].setText(`6. סקין סודי לשחקן [${getInGamePrice(700)} נק']`);
-            shopItemTexts[6].setText(`7. קסם קרח אולטימטיבי [${getInGamePrice(1200)} נק']`);
-            shopItemTexts[7].setText(`8. לשדרג מראה דרקון [${getInGamePrice(900)} נק']`);
+            shopItemTexts[0].setText(`1. Fast Ice Rifle [${getInGamePrice(300)} coins]`);
+            shopItemTexts[1].setText(`2. Gold Armor (+5 Health) [${getInGamePrice(500)} coins]`);
+            shopItemTexts[2].setText(`3. Temporary Bubble Shield [${getInGamePrice(200)} coins]`);
+            shopItemTexts[3].setText(`4. Escort Attack Drone [${getInGamePrice(800)} coins]`);
+            shopItemTexts[4].setText(`5. Strong Fire Cannon [${getInGamePrice(1000)} coins]`);
+            shopItemTexts[5].setText(`6. Secret Player Skin [${getInGamePrice(700)} coins]`);
+            shopItemTexts[6].setText(`7. Ultimate Ice Magic [${getInGamePrice(1200)} coins]`);
+            shopItemTexts[7].setText(`8. Upgrade Dragon Look [${getInGamePrice(900)} coins]`);
         }
 
         function takeDamage(scene) {
             if (isInvincible || !gameActive) return;
-            health--; healthText.setText('חיים: ' + health); SoundEngine.play('hit'); scene.cameras.main.shake(150, 0.01);
-            score = Math.max(0, score - 30); scoreText.setText('ניקוד: ' + score); 
+            health--; healthText.setText('Health: ' + health); SoundEngine.play('hit'); scene.cameras.main.shake(150, 0.01);
+            score = Math.max(0, score - 30); scoreText.setText('Score: ' + score); 
             for(let i=0; i<3; i++) { let c = coinsGroup.create(player.x, player.y, 'coinTex'); c.setVelocity(Phaser.Math.Between(-200,200), -200); c.setBounce(0.5); c.setCollideWorldBounds(true); }
             
             isInvincible = true; player.setTint(0xFF0000);
             scene.time.delayedCall(200, () => player.clearTint()); scene.time.delayedCall(400, () => player.setTint(0xFF0000));
             scene.time.delayedCall(1000, () => { isInvincible = false; player.clearTint(); });
-            if (health <= 0) { gameActive = false; player.setTint(0xFF0000); centerText.setText('פסילה!\nלחץ R כדי להתחיל מחדש').setVisible(true).setFill('#FF0000'); }
+            if (health <= 0) { gameActive = false; player.setTint(0xFF0000); centerText.setText('Game Over!\nPress R to restart').setVisible(true).setFill('#FF0000'); }
             taskState.noDamageRun = false;
         }
 
@@ -1480,19 +1480,19 @@ R - לאתחל`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap:
                 if(!gameActive) return; triggerDarknessSequence(scene);
             }});
             scene.time.addEvent({ delay: 28000, loop: true, callback: () => {
-                if(!gameActive) return; canJumpTroll = false; centerText.setText('קללת כבדות!').setVisible(true).setFill('#800080'); scene.time.delayedCall(3000, () => { canJumpTroll = true; if(gameActive) centerText.setVisible(false); });
+                if(!gameActive) return; canJumpTroll = false; centerText.setText('Heavy Curse!').setVisible(true).setFill('#800080'); scene.time.delayedCall(3000, () => { canJumpTroll = true; if(gameActive) centerText.setVisible(false); });
             }});
             scene.time.addEvent({ delay: 22000, loop: true, callback: () => {
-                if(!gameActive) return; currentSpeed = 80; centerText.setText('חילזון!').setVisible(true).setFill('#00FF00'); scene.time.delayedCall(4000, () => { currentSpeed = 250; if(gameActive) centerText.setVisible(false); });
+                if(!gameActive) return; currentSpeed = 80; centerText.setText('Snail!').setVisible(true).setFill('#00FF00'); scene.time.delayedCall(4000, () => { currentSpeed = 250; if(gameActive) centerText.setVisible(false); });
             }});
             scene.time.addEvent({ delay: 18000, loop: true, callback: () => {
                 if(!gameActive) return; for(let i=0; i<10; i++) { let d = poisonDrops.create(player.x + Phaser.Math.Between(-400, 400), -50, 'poisonDropTex'); d.body.allowGravity = true; }
             }});
             scene.time.addEvent({ delay: 45000, loop: true, callback: () => {
-                if(!gameActive) return; scene.cameras.main.rotation = Math.PI; centerText.setText('מצלמה הפוכה!').setVisible(true).setFill('#FF00FF'); scene.time.delayedCall(3000, () => { scene.cameras.main.rotation = 0; if(gameActive) centerText.setVisible(false); });
+                if(!gameActive) return; scene.cameras.main.rotation = Math.PI; centerText.setText('Upside-down Camera!').setVisible(true).setFill('#FF00FF'); scene.time.delayedCall(3000, () => { scene.cameras.main.rotation = 0; if(gameActive) centerText.setVisible(false); });
             }});
             scene.time.addEvent({ delay: 20000, loop: true, callback: () => {
-                if(!gameActive) return; scene.cameras.main.shake(1000, 0.02); reverseControls = true; centerText.setText('רעידת אדמה!').setVisible(true).setFill('#FF8C00'); scene.time.delayedCall(2000, () => { reverseControls = false; if(gameActive && !scene.cameras.main.rotation) centerText.setVisible(false); });
+                if(!gameActive) return; scene.cameras.main.shake(1000, 0.02); reverseControls = true; centerText.setText('Earthquake!').setVisible(true).setFill('#FF8C00'); scene.time.delayedCall(2000, () => { reverseControls = false; if(gameActive && !scene.cameras.main.rotation) centerText.setVisible(false); });
             }});
             scene.time.addEvent({ delay: 13000, loop: true, callback: () => {
                 if(!gameActive) return; let spike = fallingSpikes.create(player.x, 0, 'spikeTex'); spike.body.allowGravity = true; spike.setVelocityY(400);
