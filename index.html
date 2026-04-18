@@ -91,6 +91,7 @@
             this.load.image('stage3DragonAltImg', 'stage3_dragon2.jpg');
             this.load.image('trollImg', 'מכשף.png');
             this.load.image('thiefTex', 'מכשף.png');
+            this.load.image('playerImg', 'מכשף.png');
             this.load.image('chatGPTImageTex', 'ChatGPT Image Apr 17, 2026, 11_05_45 AM.png');
             this.load.image('stage5DragonImg', 'Gemini_Generated_Image_b1yyxab1yyxab1yy.png');
         }
@@ -1004,7 +1005,7 @@ R - Restart`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { 
 
             if (attackDrone) { attackDrone.destroy(); attackDrone = null; }
             if (!player) {
-                player = scene.physics.add.sprite(100, 450, 'playerWizardTex').setBounce(0.1).setCollideWorldBounds(true).setDepth(50).setScale(1.1);
+                player = scene.physics.add.sprite(100, 450, 'playerImg').setBounce(0.1).setCollideWorldBounds(true).setDepth(50).setScale(0.18);
                 scene.cameras.main.startFollow(player, true, 0.05, 0.05);
                 bubbleShield = scene.add.image(0, 0, 'bubbleTex').setAlpha(0).setDepth(51);
                 pet = scene.add.image(100, 400, 'petTex').setDepth(52);
@@ -1013,7 +1014,7 @@ R - Restart`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { 
                 scene.tweens.add({ targets: playerWing, angle: { from: -25, to: 25 }, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
                 scene.tweens.add({ targets: playerMouth, scaleY: { from: 0.8, to: 1.3 }, duration: 300, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
             } else {
-                player.x = 100; player.y = 450; player.setVelocity(0); player.clearTint(); player.setScale(1.1);
+                player.x = 100; player.y = 450; player.setVelocity(0); player.clearTint(); player.setScale(0.18);
                 if (playerWing) { playerWing.setPosition(player.x - 12, player.y - 10); }
                 if (playerMouth) { playerMouth.setPosition(player.x + 10, player.y + 8); }
             }
@@ -1027,14 +1028,14 @@ R - Restart`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { 
 
             if (level === 1) {
                 [500, 900, 1400, 2000].forEach((x, i) => { let p = platforms.create(x, 450 - (i*20), 'platTex'); p.body.checkCollision.down = false; });
-                [700, 1200, 1800, 2400].forEach(x => enemies.create(x, 500, 'trollImg').setVelocityX(100).setBounceX(1).setCollideWorldBounds(true).setDisplaySize(48, 48).setData('isTroll', true));
+                [700, 1200, 1800, 2400].forEach(x => enemies.create(x, 500, 'trollImg').setVelocityX(100).setBounceX(1).setCollideWorldBounds(true).setScale(0.14).setData('isTroll', true));
                 mysteryBlocks.create(400, 250, 'blockTex').setData('used', false); springs.create(1600, 550, 'springTex');
                 badSprings.create(1100, 550, 'badSpringTex'); 
                 dragonCoinsGroup.create(1400, 450, 'dragonCoinTex').setBounce(0.5).setCollideWorldBounds(true);
             } else if (level === 2) {
                 [600, 1100, 1600, 2200].forEach((x, i) => { let p = platforms.create(x, 450 - (i*20), 'platTex'); p.body.checkCollision.down = false; });
-                [800, 1400].forEach(x => enemies.create(x, 500, 'trollImg').setVelocityX(120).setBounceX(1).setCollideWorldBounds(true).setDisplaySize(48, 48).setData('isTroll', true));
-                [1900, 2500].forEach(x => enemies.create(x, 500, 'thiefTex').setVelocityX(200).setBounceX(1).setCollideWorldBounds(true)); 
+                [800, 1400].forEach(x => enemies.create(x, 500, 'trollImg').setVelocityX(120).setBounceX(1).setCollideWorldBounds(true).setScale(0.14).setData('isTroll', true));
+                [1900, 2500].forEach(x => enemies.create(x, 500, 'thiefTex').setVelocityX(200).setBounceX(1).setCollideWorldBounds(true).setScale(0.14)); 
                 mysteryBlocks.create(1000, 250, 'blockTex').setData('used', false); mysteryBlocks.create(1200, 250, 'mimicTex').setData('mimic', true); 
                 healSprings.create(2500, 550, 'healSpringTex');
                 let p1 = portals.create(400, 300, 'portalTex'); let p2 = portals.create(1800, 200, 'portalTex'); p1.setData('target', p2); p2.setData('target', p1);
