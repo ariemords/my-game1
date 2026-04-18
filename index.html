@@ -37,7 +37,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.60.0/phaser.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <style>
         body { margin: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; color: white; font-family: Arial, sans-serif; }
-        #game-container { box-shadow: 0 0 30px rgba(0,0,0,0.8); border-radius: 10px; overflow: hidden; position: relative; }
+        #game-container { border-radius: 10px; overflow: hidden; position: relative; }
         #error-msg { display: none; color: red; font-size: 20px; direction: ltr; position: absolute; top: 20px; left: 20px; background: black; padding: 20px; border: 2px solid red; z-index: 1000; }
     </style>
 </head>
@@ -1035,7 +1035,7 @@ R - Restart`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { 
             } else if (level === 2) {
                 [600, 1100, 1600, 2200].forEach((x, i) => { let p = platforms.create(x, 450 - (i*20), 'platTex'); p.body.checkCollision.down = false; });
                 [800, 1400].forEach(x => enemies.create(x, 500, 'trollImg').setVelocityX(120).setBounceX(1).setCollideWorldBounds(true).setScale(0.14).setData('isTroll', true));
-                [1900, 2500].forEach(x => enemies.create(x, 500, 'thiefTex').setVelocityX(200).setBounceX(1).setCollideWorldBounds(true).setScale(0.14)); 
+                [1900, 2500].forEach(x => enemies.create(x, 500, 'thiefTex').setVelocityX(200).setBounceX(1).setCollideWorldBounds(true).setScale(0.14).setData('isTroll', true)); 
                 mysteryBlocks.create(1000, 250, 'blockTex').setData('used', false); mysteryBlocks.create(1200, 250, 'mimicTex').setData('mimic', true); 
                 healSprings.create(2500, 550, 'healSpringTex');
                 let p1 = portals.create(400, 300, 'portalTex'); let p2 = portals.create(1800, 200, 'portalTex'); p1.setData('target', p2); p2.setData('target', p1);
