@@ -89,7 +89,8 @@
             this.load.image('iceDragonImg', '818VKX6uLAL.jpg');
             this.load.image('stage3DragonImg', 'stage3_dragon1.jpg');
             this.load.image('stage3DragonAltImg', 'stage3_dragon2.jpg');
-            this.load.image('trollImg', 'troll.png');
+            this.load.image('trollImg', 'מכשף.png');
+            this.load.image('thiefTex', 'מכשף.png');
             this.load.image('chatGPTImageTex', 'ChatGPT Image Apr 17, 2026, 11_05_45 AM.png');
             this.load.image('stage5DragonImg', 'Gemini_Generated_Image_b1yyxab1yyxab1yy.png');
         }
@@ -150,7 +151,6 @@
             g.fillStyle(0x111111); g.fillRect(10, 8, 12, 24); g.fillStyle(0x222222); g.fillRect(4, 16, 24, 24); g.fillStyle(0x444444); g.fillRect(6, 0, 20, 18); g.fillStyle(0xAAAAAA); g.fillCircle(16, 14, 6); g.fillStyle(0x000000); g.fillCircle(13, 14, 2); g.fillCircle(19, 14, 2); g.fillStyle(0x8B4513); g.fillRect(2, 24, 6, 28); g.fillStyle(0xFFD700); g.fillCircle(5, 24, 4); g.generateTexture('playerWizardTex', 32, 56); g.clear();
             g.fillStyle(0x555555); g.fillRect(4, 0, 24, 8); g.fillStyle(0x777777); g.fillRect(0, 8, 32, 16); g.fillStyle(0x333333); g.fillRect(8, 12, 16, 8); g.fillStyle(0x00FF00); g.fillRect(12, 14, 2, 2); g.fillRect(18, 14, 2, 2); g.fillStyle(0x444444); g.fillRect(4, 24, 8, 8); g.fillRect(20, 24, 8, 8); g.generateTexture('playerTex', 32, 32); g.clear();
             g.fillStyle(0x800080, 0.9); g.fillCircle(16, 16, 14); g.fillStyle(0xFFFFFF); g.fillCircle(12, 14, 4); g.fillCircle(20, 14, 4); g.fillStyle(0x000000); g.fillCircle(12, 14, 2); g.fillCircle(20, 14, 2); g.generateTexture('enemyTex', 32, 32); g.clear();
-            g.fillStyle(0xFF0000, 0.9); g.fillCircle(16, 16, 14); g.fillStyle(0xFFFFFF); g.fillCircle(12, 14, 4); g.fillCircle(20, 14, 4); g.fillStyle(0x000000); g.fillRect(10, 12, 12, 4); g.generateTexture('thiefTex', 32, 32); g.clear();
             g.fillStyle(0x222222); g.fillRect(12, 12, 8, 8); g.fillStyle(0x444444); g.moveTo(12, 12); g.lineTo(0, 4); g.lineTo(12, 16); g.fill(); g.moveTo(20, 12); g.lineTo(32, 4); g.lineTo(20, 16); g.fill(); g.fillStyle(0xFF0000); g.fillRect(14, 14, 1, 1); g.fillRect(17, 14, 1, 1); g.generateTexture('batTex', 32, 32); g.clear();
             
             // 🐉 original mechanical dragon - just like before!
@@ -991,6 +991,7 @@ R - Restart`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { 
                 for (let x = 0; x < 3200; x += 400) ground.create(x + 200, 580, 'groundTex'); 
             } 
             else if (level === 5) { scene.cameras.main.setBackgroundColor('#110022'); for (let x = 0; x < 3200; x += 800) lava.create(x, 590, 'lavaTex'); ground.create(200, 580, 'groundTex'); }
+            if (bgFront) { bgFront.setVisible(level !== 3 && level !== 5); }
 
             if (level < 5) {
                 let goalX = 3000;
