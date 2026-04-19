@@ -135,6 +135,8 @@
         let taskState = { coinsRun: 0, enemiesRun: 0, noDamageRun: true, completed: {1:false,2:false,3:false}, claimed: {1:false,2:false,3:false} };
         let gameWasActiveBeforeTasks = false;
         let specialWeapon = null, playerSkin = false;
+        let superCharge = 0, superChargeMax = 3;
+        let superChargeText, superBarBg, superBarFill;
         
         // --- New shop variables and extras ---
         let isShopOpen = false, shopContainer;
@@ -146,6 +148,28 @@
         let dragonCoinText, permUpgradesText;
         let pet, bubbleShield, fogOverlay;
         let playerWing, playerMouth;
+
+        function updateSuperChargeUI() {
+            let ratio = superChargeMax === 0 ? 0 : superCharge / superChargeMax;
+            superChargeText.setText('Super: ' + superCharge + '/' + superChargeMax + (superCharge >= superChargeMax ? ' READY' : ''));
+            superBarFill.setDisplaySize(120 * ratio, 12);
+            superBarFill.setFillStyle(superCharge >= superChargeMax ? 0x00FF00 : 0xFFFF00);
+        }
+
+        function incrementSuperCharge(amount = 1) {
+            if (superCharge >= superChargeMax) return;
+            superCharge = Math.min(superChargeMax, superCharge + amount);
+            updateSuperChargeUI();
+        }
+
+        function fireSuperShot(scene) {
+            let ice = iceballs.create(player.x + (player.flipX ? -20 : 20), player.y, 'chatGPTImageTex').setTint(0x00FFFF).setAlpha(0.9);
+            ice.body.allowGravity = false;
+            ice.setVelocityX(player.flipX ? -700 : 700);
+            ice.setVelocityY(0);
+            ice.setDisplaySize(60, 40);
+            ice.setData('isSuper', true);
+        }
 
         function createTextures(scene) {
             let g = scene.make.graphics({ x: 0, y: 0, add: false });
@@ -327,6 +351,7 @@
             let overlayTitle = scene.add.text(0, -150, 'How to Play', { fontSize: '32px', fill: '#00FFAA', fontStyle: 'bold' }).setOrigin(0.5);
             let overlayBody = scene.add.text(0, -40, `W / ↑ / SPACE - Jump
 X - Shoot
+S - Super shot (after 3 kills)
 Z - Dash
 N - Open shop
 B - Open permanent shop
@@ -393,6 +418,10 @@ R - Restart`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { 
             healthText = this.add.text(16, 50, 'Health: 3', { fontSize: '24px', fill: '#FFF', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setScrollFactor(0).setDepth(200);
             dragonCoinText = this.add.text(16, 84, 'Dragon Coins: 0', { fontSize: '20px', fill: '#FFD700', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setScrollFactor(0).setDepth(200);
             permUpgradesText = this.add.text(16, 112, 'Upgrades: None', { fontSize: '18px', fill: '#AAAAFF', stroke: '#000', strokeThickness: 2 }).setScrollFactor(0).setDepth(200);
+            superChargeText = this.add.text(16, 140, 'Super: 0/3', { fontSize: '18px', fill: '#00FF00', stroke: '#000', strokeThickness: 3 }).setScrollFactor(0).setDepth(200);
+            superBarBg = this.add.rectangle(120, 146, 120, 12, 0x222222).setOrigin(0, 0.5).setScrollFactor(0).setDepth(200);
+            superBarFill = this.add.rectangle(120, 146, 0, 12, 0xFFFF00).setOrigin(0, 0.5).setScrollFactor(0).setDepth(201);
+            updateSuperChargeUI();
             levelText = this.add.text(400, 16, 'Level: 1', { fontSize: '24px', fill: '#FFF', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(200);
             bossHealthText = this.add.text(600, 16, '', { fontSize: '24px', fill: '#FF0000', fontStyle: 'bold', stroke: '#000', strokeThickness: 3 }).setScrollFactor(0).setDepth(200);
             bombText = this.add.text(400, 80, '', { fontSize: '40px', fill: '#FF0000', fontStyle: 'bold', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(200).setVisible(false);
@@ -1028,14 +1057,14 @@ R - Restart`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { 
 
             if (level === 1) {
                 [500, 900, 1400, 2000].forEach((x, i) => { let p = platforms.create(x, 450 - (i*20), 'platTex'); p.body.checkCollision.down = false; });
-                [700, 1200, 1800, 2400].forEach(x => enemies.create(x, 500, 'trollImg').setVelocityX(100).setBounceX(1).setCollideWorldBounds(true).setDisplaySize(40, 50).setData('isTroll', true));
+                [700, 1200, 1800, 2400].forEach(x => enemies.create(x, 500, 'trollImg').setVelocityX(100).setBounceX(1).setCollideWorldBounds(true).setDisplaySize(50, 45).setData('isTroll', true));
                 mysteryBlocks.create(400, 250, 'blockTex').setData('used', false); springs.create(1600, 550, 'springTex');
                 badSprings.create(1100, 550, 'badSpringTex'); 
                 dragonCoinsGroup.create(1400, 450, 'dragonCoinTex').setBounce(0.5).setCollideWorldBounds(true);
             } else if (level === 2) {
                 [600, 1100, 1600, 2200].forEach((x, i) => { let p = platforms.create(x, 450 - (i*20), 'platTex'); p.body.checkCollision.down = false; });
-                [800, 1400].forEach(x => enemies.create(x, 500, 'trollImg').setVelocityX(120).setBounceX(1).setCollideWorldBounds(true).setDisplaySize(40, 50).setData('isTroll', true));
-                [1900, 2500].forEach(x => enemies.create(x, 500, 'thiefTex').setVelocityX(200).setBounceX(1).setCollideWorldBounds(true).setDisplaySize(40, 50)); 
+                [800, 1400].forEach(x => enemies.create(x, 500, 'trollImg').setVelocityX(120).setBounceX(1).setCollideWorldBounds(true).setDisplaySize(50, 45).setData('isTroll', true));
+                [1900, 2500].forEach(x => enemies.create(x, 500, 'thiefTex').setVelocityX(200).setBounceX(1).setCollideWorldBounds(true).setDisplaySize(50, 45)); 
                 mysteryBlocks.create(1000, 250, 'blockTex').setData('used', false); mysteryBlocks.create(1200, 250, 'mimicTex').setData('mimic', true); 
                 healSprings.create(2500, 550, 'healSpringTex');
                 let p1 = portals.create(400, 300, 'portalTex'); let p2 = portals.create(1800, 200, 'portalTex'); p1.setData('target', p2); p2.setData('target', p1);
@@ -1128,7 +1157,7 @@ R - Restart`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { 
             scene.physics.add.collider(player, healSprings, (p, s) => { p.setVelocityY(gravityFlipped ? 900 : -900); if(health < 5) health++; healthText.setText('Health: ' + health); SoundEngine.play('coin'); });
             scene.physics.add.collider(player, badSprings, (p, s) => { p.setVelocityY(gravityFlipped ? 500 : -500); takeDamage(scene); scene.tweens.add({targets: s, scaleY: 0.5, duration: 50, yoyo: true}); }); 
 
-if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal, (p, f) => { explodeParticles(scene, f.x, f.y, 0xFF0000, 30); f.destroy(); SoundEngine.play('hit'); for(let i=0; i<3; i++) enemies.create(f.x + (i*30 - 30), f.y - 50, 'trollImg').setVelocityX(150).setBounceX(1).setCollideWorldBounds(true).setDisplaySize(40, 50).setData('isTroll', true); }); }
+if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal, (p, f) => { explodeParticles(scene, f.x, f.y, 0xFF0000, 30); f.destroy(); SoundEngine.play('hit'); for(let i=0; i<3; i++) enemies.create(f.x + (i*30 - 30), f.y - 50, 'trollImg').setVelocityX(150).setBounceX(1).setCollideWorldBounds(true).setDisplaySize(50, 45).setData('isTroll', true); }); }
 
             scene.physics.add.overlap(player, portals, (p, portal) => { if(!p.getData('teleporting')) { p.setData('teleporting', true); SoundEngine.play('jump'); let target = portal.getData('target'); p.x = target.x; p.y = target.y; scene.time.delayedCall(1000, () => p.setData('teleporting', false)); } });
             scene.physics.add.overlap(player, fakeCoins, (p, fc) => { fc.destroy(); SoundEngine.play('hit'); bats.create(p.x, p.y - 50, 'batTex'); });
@@ -1150,9 +1179,26 @@ if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal,
 
             scene.physics.add.collider(iceballs, [ground, platforms], (i) => i.destroy());
             scene.physics.add.collider(iceballs, enemies, (i, e) => {
+                let isSuper = i.getData('isSuper');
                 i.destroy(); SoundEngine.play('hit');
-                if(e.getData('isGiant')) { e.setData('hp', e.getData('hp') - 1); e.setTint(0x00FFFF); scene.time.delayedCall(100, () => e.clearTint()); if(e.getData('hp') <= 0) { e.destroy(); score+=50; scoreText.setText('Score: ' + score); taskState.enemiesRun += 1; if (taskState.enemiesRun >= 8) taskState.completed[2] = true; updateTaskOverlay(); explodeParticles(scene, e.x, e.y, 0xFFFFFF, 30); } } 
-                else { e.destroy(); score+=30; scoreText.setText('Score: ' + score); taskState.enemiesRun += 1; if (taskState.enemiesRun >= 8) taskState.completed[2] = true; updateTaskOverlay(); explodeParticles(scene, e.x, e.y, Math.random()*0xFFFFFF, 20); }
+                let damage = isSuper ? 2 : 1;
+                if(e.getData('isGiant')) {
+                    e.setData('hp', e.getData('hp') - damage);
+                    e.setTint(isSuper ? 0x00FF00 : 0x00FFFF);
+                    scene.time.delayedCall(100, () => e.clearTint());
+                    if(e.getData('hp') <= 0) {
+                        e.destroy(); score += isSuper ? 70 : 50; scoreText.setText('Score: ' + score);
+                        taskState.enemiesRun += 1; if (taskState.enemiesRun >= 8) taskState.completed[2] = true; updateTaskOverlay();
+                        incrementSuperCharge();
+                        explodeParticles(scene, e.x, e.y, 0xFFFFFF, 30);
+                    }
+                } else {
+                    e.destroy(); score += isSuper ? 50 : 30; scoreText.setText('Score: ' + score);
+                    taskState.enemiesRun += 1; if (taskState.enemiesRun >= 8) taskState.completed[2] = true; updateTaskOverlay();
+                    if (!isSuper) incrementSuperCharge();
+                    else { score += 10; scoreText.setText('Score: ' + score); }
+                    explodeParticles(scene, e.x, e.y, Math.random()*0xFFFFFF, 20);
+                }
             });
             scene.physics.add.collider(iceballs, bats, (i, b) => { b.destroy(); i.destroy(); score+=40; SoundEngine.play('hit'); explodeParticles(scene, b.x, b.y, 0x00FFFF, 10); });
             
@@ -1160,7 +1206,7 @@ if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal,
                 if ((!gravityFlipped && p.body.touching.down && e.body.touching.up && p.body.velocity.y > 0) || (gravityFlipped && p.body.touching.up && e.body.touching.down && p.body.velocity.y < 0)) { 
                     p.setVelocityY(gravityFlipped ? (superJumpActive ? 900 : 600) : (superJumpActive ? -600 : -350));
                     if(e.getData('isGiant')) { e.setData('hp', e.getData('hp') - 1); e.setTint(0xFF0000); scene.time.delayedCall(100, () => e.clearTint()); SoundEngine.play('hit'); if(e.getData('hp') <= 0) { e.destroy(); score+=50; taskState.enemiesRun += 1; if (taskState.enemiesRun >= 8) taskState.completed[2] = true; scoreText.setText('Score: ' + score); updateTaskOverlay(); explodeParticles(scene, e.x, e.y, 0xFFFFFF, 30); } }
-                    else { e.destroy(); score+=20; taskState.enemiesRun += 1; if (taskState.enemiesRun >= 8) taskState.completed[2] = true; scoreText.setText('Score: ' + score); updateTaskOverlay(); SoundEngine.play('jump'); explodeParticles(scene, e.x, e.y, Math.random()*0xFFFFFF, 20); } 
+                    else { e.destroy(); score+=20; taskState.enemiesRun += 1; if (taskState.enemiesRun >= 8) taskState.completed[2] = true; scoreText.setText('Score: ' + score); updateTaskOverlay(); incrementSuperCharge(); SoundEngine.play('jump'); explodeParticles(scene, e.x, e.y, Math.random()*0xFFFFFF, 20); } 
                 } 
                 else { takeDamage(scene); if(e.texture.key === 'thiefTex') { hasIcePower = false; centerText.setText('Your ice was stolen!').setVisible(true).setFill('#FF0000'); scene.time.delayedCall(5000, () => { hasIcePower = true; if(gameActive) centerText.setVisible(false); }); } } 
             });
@@ -1223,6 +1269,14 @@ if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal,
             if (Phaser.Input.Keyboard.JustDown(gravToggleKey) && score >= 50) { score -= 50; scoreText.setText('Score: ' + score); SoundEngine.play('coin'); flipGravity(this, 3000); }
             if (Phaser.Input.Keyboard.JustDown(superJumpKey)) { superJumpActive = true; SoundEngine.play('coin'); this.time.delayedCall(5000, () => superJumpActive = false); }
             if (Phaser.Input.Keyboard.JustDown(meteorKey)) { let m = fireballs.create(player.x + (player.flipX ? -300 : 300), 0, 'powerTex').setTint(0xFF0000); m.body.allowGravity = true; m.setVelocityY(500); SoundEngine.play('shoot'); }
+            
+            if (Phaser.Input.Keyboard.JustDown(shrinkKey) && superCharge >= superChargeMax && gameActive && !isShopOpen) {
+                fireSuperShot(this);
+                superCharge = 0;
+                updateSuperChargeUI();
+                centerText.setText('SUPER SHOT!').setVisible(true);
+                this.time.delayedCall(800, () => { if(gameActive) centerText.setVisible(false); });
+            }
             
             // shooting with new shootDelay variable (upgrades via shop)
             if (Phaser.Input.Keyboard.JustDown(shootKey) && hasIcePower && time > lastShotTime + shootDelay) {
