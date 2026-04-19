@@ -1296,7 +1296,7 @@ R - Restart`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { 
             activeColliders.push(scene.physics.add.collider(player, lasers, () => takeDamage(scene)));
             activeColliders.push(scene.physics.add.collider(player2, lasers, () => takeDamage2Player(scene)));
 
-            activeColliders.push(scene.physics.add.collider(player, defuseOrbs, (p, orb) => { orb.destroy(); bombActive = false; bombText.setVisible(false); SoundEngine.play('coin'); explodeParticles(scene, p.x, p.y, 0x00FF00, 20); });
+            activeColliders.push(scene.physics.add.collider(player, defuseOrbs, (p, orb) => { orb.destroy(); bombActive = false; bombText.setVisible(false); SoundEngine.play('coin'); explodeParticles(scene, p.x, p.y, 0x00FF00, 20); }));
             activeColliders.push(scene.physics.add.collider(player2, defuseOrbs, (p, orb) => { orb.destroy(); bombActive = false; bombText.setVisible(false); SoundEngine.play('coin'); explodeParticles(scene, p.x, p.y, 0x00FF00, 20); }));
 
             activeColliders.push(scene.physics.add.collider(player, poisonDrops, (p, d) => { d.destroy(); takeDamage(scene); }));
