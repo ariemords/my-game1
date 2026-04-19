@@ -37,7 +37,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.60.0/phaser.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <style>
         body { margin: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; color: white; font-family: Arial, sans-serif; }
-        #game-container { border-radius: 10px; overflow: hidden; position: relative; }
+        #game-container { box-shadow: 0 0 30px rgba(0,0,0,0.8); border-radius: 10px; overflow: hidden; position: relative; }
         #error-msg { display: none; color: red; font-size: 20px; direction: ltr; position: absolute; top: 20px; left: 20px; background: black; padding: 20px; border: 2px solid red; z-index: 1000; }
     </style>
 </head>
@@ -89,8 +89,8 @@
             this.load.image('iceDragonImg', '818VKX6uLAL.jpg');
             this.load.image('stage3DragonImg', 'stage3_dragon1.jpg');
             this.load.image('stage3DragonAltImg', 'stage3_dragon2.jpg');
-            this.load.image('trollImg', 'מכשף.png');
-            this.load.image('thiefTex', 'מכשף.png');
+            this.load.image('trollImg', 'troll.png');
+            this.load.image('thiefTex', 'troll.png');
             this.load.image('playerImg', 'מכשף.png');
             this.load.image('chatGPTImageTex', 'ChatGPT Image Apr 17, 2026, 11_05_45 AM.png');
             this.load.image('stage5DragonImg', 'Gemini_Generated_Image_b1yyxab1yyxab1yy.png');
@@ -380,7 +380,7 @@ R - Restart`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { 
             this.time.addEvent({ delay: 1800, loop: true, callback: () => {
                 if (!gameActive || !enemies) return;
                 enemies.getChildren().forEach(e => {
-                    if (!e.active || !e.body || !e.getData('isTroll')) return;
+                    if (!e.active || !e.body) return;
                     let onFloor = e.body.blocked.down || e.body.touching.down;
                     if (onFloor && Phaser.Math.Between(0, 100) < 12) {
                         e.setVelocityY(-240);
@@ -1035,7 +1035,7 @@ R - Restart`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { 
             } else if (level === 2) {
                 [600, 1100, 1600, 2200].forEach((x, i) => { let p = platforms.create(x, 450 - (i*20), 'platTex'); p.body.checkCollision.down = false; });
                 [800, 1400].forEach(x => enemies.create(x, 500, 'trollImg').setVelocityX(120).setBounceX(1).setCollideWorldBounds(true).setScale(0.14).setData('isTroll', true));
-                [1900, 2500].forEach(x => enemies.create(x, 500, 'thiefTex').setVelocityX(200).setBounceX(1).setCollideWorldBounds(true).setScale(0.14).setData('isTroll', true)); 
+                [1900, 2500].forEach(x => enemies.create(x, 500, 'thiefTex').setVelocityX(200).setBounceX(1).setCollideWorldBounds(true).setScale(0.14)); 
                 mysteryBlocks.create(1000, 250, 'blockTex').setData('used', false); mysteryBlocks.create(1200, 250, 'mimicTex').setData('mimic', true); 
                 healSprings.create(2500, 550, 'healSpringTex');
                 let p1 = portals.create(400, 300, 'portalTex'); let p2 = portals.create(1800, 200, 'portalTex'); p1.setData('target', p2); p2.setData('target', p1);
@@ -1219,8 +1219,6 @@ if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal,
                 player.setVelocityY(gravityFlipped ? 300 : -300); 
                 explodeParticles(this, player.x, player.y+(gravityFlipped?-15:15), 0xFFA500, 2); 
             }
-
-            if (Math.abs(player.body.velocity.x) > 10 && Math.random() > 0.5) { let ghost = this.add.image(player.x, player.y, player.texture.key); ghost.setTint(hasIcePower ? 0x00FFFF : 0x00FF00); ghost.setAlpha(0.5); ghost.flipX = player.flipX; this.tweens.add({ targets: ghost, alpha: 0, duration: 400, onComplete: () => ghost.destroy() }); }
 
             if (Phaser.Input.Keyboard.JustDown(gravToggleKey) && score >= 50) { score -= 50; scoreText.setText('Score: ' + score); SoundEngine.play('coin'); flipGravity(this, 3000); }
             if (Phaser.Input.Keyboard.JustDown(superJumpKey)) { superJumpActive = true; SoundEngine.play('coin'); this.time.delayedCall(5000, () => superJumpActive = false); }
