@@ -1028,14 +1028,14 @@ R - Restart`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { 
 
             if (level === 1) {
                 [500, 900, 1400, 2000].forEach((x, i) => { let p = platforms.create(x, 450 - (i*20), 'platTex'); p.body.checkCollision.down = false; });
-                [700, 1200, 1800, 2400].forEach(x => enemies.create(x, 500, 'trollImg').setVelocityX(100).setBounceX(1).setCollideWorldBounds(true).setScale(0.4).setData('isTroll', true));
+                [700, 1200, 1800, 2400].forEach(x => enemies.create(x, 500, 'trollImg').setVelocityX(100).setBounceX(1).setCollideWorldBounds(true).setScale(1.0).setData('isTroll', true));
                 mysteryBlocks.create(400, 250, 'blockTex').setData('used', false); springs.create(1600, 550, 'springTex');
                 badSprings.create(1100, 550, 'badSpringTex'); 
                 dragonCoinsGroup.create(1400, 450, 'dragonCoinTex').setBounce(0.5).setCollideWorldBounds(true);
             } else if (level === 2) {
                 [600, 1100, 1600, 2200].forEach((x, i) => { let p = platforms.create(x, 450 - (i*20), 'platTex'); p.body.checkCollision.down = false; });
-                [800, 1400].forEach(x => enemies.create(x, 500, 'trollImg').setVelocityX(120).setBounceX(1).setCollideWorldBounds(true).setScale(0.4).setData('isTroll', true));
-                [1900, 2500].forEach(x => enemies.create(x, 500, 'thiefTex').setVelocityX(200).setBounceX(1).setCollideWorldBounds(true).setScale(0.4)); 
+                [800, 1400].forEach(x => enemies.create(x, 500, 'trollImg').setVelocityX(120).setBounceX(1).setCollideWorldBounds(true).setScale(1.0).setData('isTroll', true));
+                [1900, 2500].forEach(x => enemies.create(x, 500, 'thiefTex').setVelocityX(200).setBounceX(1).setCollideWorldBounds(true).setScale(1.0)); 
                 mysteryBlocks.create(1000, 250, 'blockTex').setData('used', false); mysteryBlocks.create(1200, 250, 'mimicTex').setData('mimic', true); 
                 healSprings.create(2500, 550, 'healSpringTex');
                 let p1 = portals.create(400, 300, 'portalTex'); let p2 = portals.create(1800, 200, 'portalTex'); p1.setData('target', p2); p2.setData('target', p1);
