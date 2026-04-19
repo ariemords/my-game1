@@ -1037,59 +1037,63 @@ R - Restart`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { 
             poisonDrops = scene.physics.add.group(); badSprings = scene.physics.add.staticGroup();
             buildBlocks = scene.physics.add.staticGroup(); powerUps2Player = scene.physics.add.group(); lavaSpots = scene.physics.add.staticGroup();
 
-            scene.physics.world.setBounds(0, 0, 3200, 600); scene.cameras.main.setBounds(0, 0, 3200, 600);
+            scene.physics.world.setBounds(0, 0, 800, 600);
+            scene.cameras.main.setBounds(0, 0, 800, 600);
+            scene.cameras.main.stopFollow();
+            scene.cameras.main.setScroll(0, 0);
             scene.physics.world.gravity.y = 1000;
 
             if ([1, 2, 4].includes(level)) {
                 stage1BackgroundImage = scene.add.image(400, 300, 'stage1BackgroundImg').setOrigin(0.5).setScrollFactor(0).setDepth(-1).setDisplaySize(800, 600);
             }
 
-            // Create ground and platforms like level 1
-            for (let x = 0; x < 3200; x += 400) ground.create(x + 200, 580, 'groundTex');
-            [500, 900, 1400, 2000].forEach((x, i) => { let p = platforms.create(x, 450 - (i*20), 'platTex'); p.body.checkCollision.down = false; });
+            // Create smaller ground with a lava hole in the middle
+            let leftGround = ground.create(150, 580, 'groundTex').setDisplaySize(300, 40);
+            let rightGround = ground.create(650, 580, 'groundTex').setDisplaySize(300, 40);
+            leftGround.body.checkCollision.down = false;
+            rightGround.body.checkCollision.down = false;
+            lavaSpots.create(400, 590, 'lavaTex');
 
-            // Add lava spots
-            [600, 1200, 1800, 2400].forEach(x => lavaSpots.create(x, 590, 'lavaTex'));
+            [300, 500].forEach((x, i) => { let p = platforms.create(x, 430, 'platTex'); p.body.checkCollision.down = false; });
 
-            // Add random power-ups
-            for (let i = 0; i < 5; i++) {
-                let x = Phaser.Math.Between(200, 3000);
-                let y = Phaser.Math.Between(200, 400);
+            // Add a few power-ups
+            for (let i = 0; i < 2; i++) {
+                let x = Phaser.Math.Between(200, 600);
+                let y = Phaser.Math.Between(220, 360);
                 let powerUp = powerUps2Player.create(x, y, 'powerTex').setTint(0xFFFF00);
                 powerUp.setData('type', ['health', 'speed', 'invincible'][Phaser.Math.Between(0, 2)]);
             }
 
             // Create player 1 on left
             if (!player) {
-                player = scene.physics.add.sprite(100, 450, 'playerImg').setBounce(0.1).setCollideWorldBounds(true).setDepth(50).setDisplaySize(40, 60);
-                scene.cameras.main.startFollow(player, true, 0.05, 0.05);
+                player = scene.physics.add.sprite(150, 450, 'playerImg').setBounce(0.1).setCollideWorldBounds(true).setDepth(50).setDisplaySize(40, 60).setTint(0x0000FF);
                 bubbleShield = scene.add.image(0, 0, 'bubbleTex').setAlpha(0).setDepth(51);
-                pet = scene.add.image(100, 400, 'petTex').setDepth(52);
+                pet = scene.add.image(150, 400, 'petTex').setDepth(52);
                 playerWing = scene.add.image(player.x - 12, player.y - 10, 'dragonWingTex').setOrigin(0.5).setDepth(49);
                 playerMouth = scene.add.image(player.x + 10, player.y + 8, 'dragonMouthTex').setOrigin(0.5).setDepth(51);
                 scene.tweens.add({ targets: playerWing, angle: { from: -25, to: 25 }, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
                 scene.tweens.add({ targets: playerMouth, scaleY: { from: 0.8, to: 1.3 }, duration: 300, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
             } else {
-                player.x = 100; player.y = 450; player.setVelocity(0); player.clearTint(); player.setDisplaySize(40, 60);
+                player.x = 150; player.y = 450; player.setVelocity(0); player.clearTint(); player.setDisplaySize(40, 60).setTint(0x0000FF);
                 if (playerWing) { playerWing.setPosition(player.x - 12, player.y - 10); }
                 if (playerMouth) { playerMouth.setPosition(player.x + 10, player.y + 8); }
             }
 
             // Create player 2 on right
             if (!player2) {
-                player2 = scene.physics.add.sprite(3100, 450, 'playerImg').setBounce(0.1).setCollideWorldBounds(true).setDepth(50).setDisplaySize(40, 60).setTint(0xFF0000);
+                player2 = scene.physics.add.sprite(650, 450, 'playerImg').setBounce(0.1).setCollideWorldBounds(true).setDepth(50).setDisplaySize(40, 60).setTint(0x00FF00);
                 player2Wing = scene.add.image(player2.x - 12, player2.y - 10, 'dragonWingTex').setOrigin(0.5).setDepth(49);
                 player2Mouth = scene.add.image(player2.x + 10, player2.y + 8, 'dragonMouthTex').setOrigin(0.5).setDepth(51);
                 scene.tweens.add({ targets: player2Wing, angle: { from: -25, to: 25 }, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
                 scene.tweens.add({ targets: player2Mouth, scaleY: { from: 0.8, to: 1.3 }, duration: 300, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
             } else {
-                player2.x = 3100; player2.y = 450; player2.setVelocity(0); player2.clearTint(); player2.setDisplaySize(40, 60).setTint(0xFF0000);
+                player2.x = 650; player2.y = 450; player2.setVelocity(0); player2.clearTint(); player2.setDisplaySize(40, 60).setTint(0x00FF00);
                 if (player2Wing) { player2Wing.setPosition(player2.x - 12, player2.y - 10); }
                 if (player2Mouth) { player2Mouth.setPosition(player2.x + 10, player2.y + 8); }
             }
 
-            // Add some enemies
-            [700, 1200, 1800, 2400].forEach(x => enemies.create(x, 500, 'trollImg').setVelocityX(100).setBounceX(1).setCollideWorldBounds(true).setDisplaySize(60, 45).setData('isTroll', true));
+            // Add a small number of enemies
+            [450].forEach(x => enemies.create(x, 500, 'trollImg').setVelocityX(100).setBounceX(1).setCollideWorldBounds(true).setDisplaySize(60, 45).setData('isTroll', true));
 
             setupTwoPlayerCollisions(scene);
             if(!trollEventsStarted) { trollEventsStarted = true; startTrollEvents(scene); }
@@ -1181,6 +1185,7 @@ R - Restart`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { 
                 dragonCoinsGroup.create(1400, 450, 'dragonCoinTex').setBounce(0.5).setCollideWorldBounds(true);
             } else if (level === 2) {
                 [600, 1100, 1600, 2200].forEach((x, i) => { let p = platforms.create(x, 450 - (i*20), 'platTex'); p.body.checkCollision.down = false; });
+
                 [800, 1400].forEach(x => enemies.create(x, 500, 'trollImg').setVelocityX(120).setBounceX(1).setCollideWorldBounds(true).setDisplaySize(60, 45).setData('isTroll', true));
                 [1900, 2500].forEach(x => enemies.create(x, 500, 'thiefTex').setVelocityX(200).setBounceX(1).setCollideWorldBounds(true).setDisplaySize(60, 45)); 
                 mysteryBlocks.create(1000, 250, 'blockTex').setData('used', false); mysteryBlocks.create(1200, 250, 'mimicTex').setData('mimic', true); 
@@ -1303,17 +1308,55 @@ R - Restart`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { 
             activeColliders.push(scene.physics.add.collider(player2, poisonDrops, (p, d) => { d.destroy(); takeDamage2Player(scene); }));
 
             activeColliders.push(scene.physics.add.overlap(player, powerUps2Player, (p, pw) => {
-                let type = pw.getData('type'); explodeParticles(scene, pw.x, pw.y, pw.tintTopLeft); pw.destroy(); SoundEngine.play('coin');
-                if(type === 'health') { health = Math.min(5, health + 1); healthText.setText('P1 Health: ' + health); }
-                else if(type === 'speed') { currentSpeed = 450; player.setTint(0x00FFFF); scene.time.delayedCall(5000, () => { currentSpeed = 250; player.clearTint(); }); }
-                else if(type === 'invincible') { isInvincible = true; player.setTint(0xFFFF00); scene.time.delayedCall(5000, () => { isInvincible = false; player.clearTint(); }); }
+                let type = pw.getData('type');
+                explodeParticles(scene, pw.x, pw.y, pw.tintTopLeft);
+                pw.destroy();
+                SoundEngine.play('coin');
+
+                if (type === 'health') {
+                    health = Math.min(5, health + 1);
+                    healthText.setText('P1 Health: ' + health);
+                } else if (type === 'speed') {
+                    currentSpeed = 450;
+                    player.setTint(0x00FFFF);
+                    scene.time.delayedCall(5000, () => {
+                        currentSpeed = 250;
+                        player.clearTint();
+                    });
+                } else if (type === 'invincible') {
+                    isInvincible = true;
+                    player.setTint(0xFFFF00);
+                    scene.time.delayedCall(5000, () => {
+                        isInvincible = false;
+                        player.clearTint();
+                    });
+                }
             }));
 
             activeColliders.push(scene.physics.add.overlap(player2, powerUps2Player, (p, pw) => {
-                let type = pw.getData('type'); explodeParticles(scene, pw.x, pw.y, pw.tintTopLeft); pw.destroy(); SoundEngine.play('coin');
-                if(type === 'health') { player2Health = Math.min(5, player2Health + 1); player2HealthText.setText('P2 Health: ' + player2Health); }
-                else if(type === 'speed') { currentSpeed = 450; player2.setTint(0x00FFFF); scene.time.delayedCall(5000, () => { currentSpeed = 250; player2.clearTint(); }); }
-                else if(type === 'invincible') { isInvincible = true; player2.setTint(0xFFFF00); scene.time.delayedCall(5000, () => { isInvincible = false; player2.clearTint(); }); }
+                let type = pw.getData('type');
+                explodeParticles(scene, pw.x, pw.y, pw.tintTopLeft);
+                pw.destroy();
+                SoundEngine.play('coin');
+
+                if (type === 'health') {
+                    player2Health = Math.min(5, player2Health + 1);
+                    player2HealthText.setText('P2 Health: ' + player2Health);
+                } else if (type === 'speed') {
+                    currentSpeed = 450;
+                    player2.setTint(0x00FFFF);
+                    scene.time.delayedCall(5000, () => {
+                        currentSpeed = 250;
+                        player2.clearTint();
+                    });
+                } else if (type === 'invincible') {
+                    isInvincible = true;
+                    player2.setTint(0xFFFF00);
+                    scene.time.delayedCall(5000, () => {
+                        isInvincible = false;
+                        player2.clearTint();
+                    });
+                }
             }));
 
             activeColliders.push(scene.physics.add.overlap(player, lavaSpots, () => takeDamage(scene)));
