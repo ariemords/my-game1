@@ -104,7 +104,8 @@
         let portals, fakeCoins, homingFireballs; 
         let deathGhost, poisonDrops, badSprings; 
         
-        let cursors, keys, restartKey, shootKey, dashKey, coinRainKey, shrinkKey, meteorKey, gravToggleKey, superJumpKey, shopKey, permShopKey; 
+        let cursors, keys, restartKey, shootKey, dashKey, coinRainKey, shrinkKey, meteorKey, gravToggleKey, superJumpKey, shopKey, permShopKey;
+        let key2Left, key2Right, key2Jump, key2Shoot; 
         
         let score = 0, health = 3, bossHealth = 10, currentLevel = 1;
         let dragonCoins = 0;
@@ -464,11 +465,11 @@ R - Restart`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { 
             gravToggleKey = this.input.keyboard.addKey('G'); superJumpKey = this.input.keyboard.addKey('U'); 
             shopKey = this.input.keyboard.addKey('N');
 
-            // Two-player keys
-            key2Left = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ONE);
-            key2Right = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.THREE);
-            key2Jump = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.FIVE);
-            key2Shoot = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ZERO);
+            // Two-player keys (arrow keys)
+            key2Left = cursors.left;
+            key2Right = cursors.right;
+            key2Jump = cursors.up;
+            key2Shoot = cursors.down;
             buildKey1 = this.input.keyboard.addKey('Q');
             buildKey2 = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.PLUS);
 
@@ -1486,15 +1487,15 @@ if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal,
 
             let v = currentSpeed;
             if (reverseControls) {
-                if(cursors.left.isDown || keys.A.isDown) { player.setVelocityX(v); player.flipX = false; } else if(cursors.right.isDown || keys.D.isDown) { player.setVelocityX(-v); player.flipX = true; } else player.setVelocityX(0);
+                if (keys.A.isDown) { player.setVelocityX(v); player.flipX = false; } else if (keys.D.isDown) { player.setVelocityX(-v); player.flipX = true; } else player.setVelocityX(0);
             } else {
-                if(cursors.left.isDown || keys.A.isDown) { player.setVelocityX(-v); player.flipX = true; } else if(cursors.right.isDown || keys.D.isDown) { player.setVelocityX(v); player.flipX = false; } else player.setVelocityX(0);
+                if (keys.A.isDown) { player.setVelocityX(-v); player.flipX = true; } else if (keys.D.isDown) { player.setVelocityX(v); player.flipX = false; } else player.setVelocityX(0);
             }
 
             let isTouchingGround = gravityFlipped ? player.body.touching.up : player.body.touching.down;
             if (isTouchingGround) { canDoubleJump = true; }
             
-            if (canJumpTroll && (Phaser.Input.Keyboard.JustDown(cursors.up) || Phaser.Input.Keyboard.JustDown(keys.W))) {
+            if (canJumpTroll && Phaser.Input.Keyboard.JustDown(keys.W)) {
                 let jv = superJumpActive ? 900 : 600;
                 if (isTouchingGround) { player.setVelocityY(gravityFlipped ? jv : -jv); SoundEngine.play('jump'); } 
                 else if (canDoubleJump) { player.setVelocityY(gravityFlipped ? (jv-100) : -(jv-100)); canDoubleJump = false; SoundEngine.play('jump'); }
