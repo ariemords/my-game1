@@ -110,7 +110,7 @@
         let dragonCoins = 0;
         let cloudLayer, bgFront;
         let gameActive = false, isInvincible = false, currentSpeed = 250, hasIcePower = true;
-        let lastShotTime = 0, canDoubleJump = false, canDash = true, usedCoinRain = false;
+        let lastShotTime = 0, canDoubleJump = false, canDoubleJump2 = false, canDash = true, usedCoinRain = false;
         let reverseControls = false, isTiny = false, bombActive = false, bombTimer = 0;
         let trollEventsStarted = false, superJumpActive = false, canJumpTroll = true, gravityFlipped = false;
         let dashSpeed = 1000;
@@ -331,6 +331,7 @@
             isTwoPlayerMode = true;
             health = 5;
             player2Health = 5;
+            isInvincible = false;
             healthText.setText('P1 Health: ' + health);
             player2HealthText.setText('P2 Health: ' + player2Health).setVisible(true);
             if (homeMenuActive) { hideHomeMenu(); }
@@ -1019,6 +1020,7 @@ R - Restart`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { 
             currentLevel = level;
             clearTemporaryUpgrades();
             scene.physics.world.timeScale = 1; reverseControls = false; gravityFlipped = false; isTiny = false; bombActive = false; bombText.setVisible(false); superJumpActive = false; canJumpTroll = true; currentSpeed = 250;
+            canDoubleJump = false; canDoubleJump2 = false;
             dashSpeed = permanentUpgrades.longDash ? 1600 : 1000;
             health = 5;
             player2Health = 5;
@@ -1622,12 +1624,12 @@ if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal,
                 if (player2Mouth) { player2Mouth.setPosition(player2.x + 10, player2.y + 8); }
 
                 let isP2TouchingGround = gravityFlipped ? player2.body.touching.up : player2.body.touching.down;
-                if (isP2TouchingGround) { canDoubleJump = true; }
+                if (isP2TouchingGround) { canDoubleJump2 = true; }
 
                 if (canJumpTroll && Phaser.Input.Keyboard.JustDown(key2Jump)) {
                     let jv = superJumpActive ? 900 : 600;
                     if (isP2TouchingGround) { player2.setVelocityY(gravityFlipped ? jv : -jv); SoundEngine.play('jump'); } 
-                    else if (canDoubleJump) { player2.setVelocityY(gravityFlipped ? (jv-100) : -(jv-100)); canDoubleJump = false; SoundEngine.play('jump'); }
+                    else if (canDoubleJump2) { player2.setVelocityY(gravityFlipped ? (jv-100) : -(jv-100)); canDoubleJump2 = false; SoundEngine.play('jump'); }
                 }
 
                 // Player 2 shooting
@@ -1847,6 +1849,8 @@ if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal,
         }
 
         function startTrollEvents(scene) {
+            if (isTwoPlayerMode) return; // Disable troll events in two-player mode
+            
             scene.time.addEvent({ delay: 25000, loop: true, callback: () => {
                 if(!gameActive) return; triggerDarknessSequence(scene);
             }});
