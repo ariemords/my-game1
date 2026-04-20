@@ -1617,6 +1617,10 @@ if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal,
                 else if (key2Right.isDown) { player2.setVelocityX(currentSpeed); player2.flipX = false; } 
                 else player2.setVelocityX(0);
 
+                // Update player2 wing and mouth positions
+                if (player2Wing) { player2Wing.setPosition(player2.x - 12, player2.y - 10); }
+                if (player2Mouth) { player2Mouth.setPosition(player2.x + 10, player2.y + 8); }
+
                 let isP2TouchingGround = gravityFlipped ? player2.body.touching.up : player2.body.touching.down;
                 if (isP2TouchingGround) { canDoubleJump = true; }
 
@@ -1645,7 +1649,7 @@ if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal,
                     this.time.delayedCall(10000, () => { if(block && block.active) block.destroy(); });
                 }
 
-                if (player2.y > 600 || player2.y < -100) { takeDamage2Player(this); player2.x = 3100; player2.y = 100; player2.setVelocity(0); }
+                if (player2.y > 600 || player2.y < -100) { takeDamage2Player(this); player2.x = 650; player2.y = 450; player2.setVelocity(0); }
             }
 
             // Player 1 build blocks
