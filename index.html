@@ -110,10 +110,11 @@
         let score = 0, health = 3, bossHealth = 10, currentLevel = 1;
         let dragonCoins = 0;
         let cloudLayer, bgFront;
-        let gameActive = false, isInvincible = false, currentSpeed = 250, hasIcePower = true;
+        let gameActive = false, isInvincible = false, isInvincible2 = false, currentSpeed = 250, hasIcePower = true;
         let lastShotTime = 0, canDoubleJump = false, canDoubleJump2 = false, canDash = true, usedCoinRain = false;
         let reverseControls = false, isTiny = false, bombActive = false, bombTimer = 0;
         let trollEventsStarted = false, superJumpActive = false, canJumpTroll = true, gravityFlipped = false;
+        let trollEventHandles = [];
         let dashSpeed = 1000;
         let permanentUpgrades = { extraLife: false, longDash: false, shopDiscount: false };
         let activeColliders = [];
@@ -328,35 +329,44 @@
             activeColliders = [];
         }
 
+        function clearTrollEvents() {
+            trollEventHandles.forEach(ev => { if (ev && ev.remove) ev.remove(false); });
+            trollEventHandles = [];
+            trollEventsStarted = false;
+        }
+
         function startTwoPlayerGame(scene) {
             isTwoPlayerMode = true;
             health = 5;
             player2Health = 5;
             isInvincible = false;
+            isInvincible2 = false;
             healthText.setText('P1 Health: ' + health);
             player2HealthText.setText('P2 Health: ' + player2Health).setVisible(true);
             if (homeMenuActive) { hideHomeMenu(); }
             if (!gameActive && !isShopOpen && !isPermanentShopOpen) {
+                clearTrollEvents();
                 gameActive = true;
                 centerText.setVisible(false);
                 SoundEngine.init();
                 setupTwoPlayerLevel(scene, 1);
-                setupTwoPlayerCollisions(scene);
             }
         }
 
         function startGame(scene) {
             isTwoPlayerMode = false;
             health = 3;
+            isInvincible = false;
+            isInvincible2 = false;
             healthText.setText('Health: ' + health);
             player2HealthText.setVisible(false);
             if (homeMenuActive) { hideHomeMenu(); }
             if (!gameActive && !isShopOpen && !isPermanentShopOpen) {
+                clearTrollEvents();
                 gameActive = true;
                 centerText.setVisible(false);
                 SoundEngine.init();
                 setupLevel(scene, 1);
-                setupCollisions(scene);
             }
         }
 
@@ -1022,6 +1032,7 @@ R - Restart`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { 
             clearTemporaryUpgrades();
             scene.physics.world.timeScale = 1; reverseControls = false; gravityFlipped = false; isTiny = false; bombActive = false; bombText.setVisible(false); superJumpActive = false; canJumpTroll = true; currentSpeed = 250;
             canDoubleJump = false; canDoubleJump2 = false;
+            isInvincible = false; isInvincible2 = false;
             dashSpeed = permanentUpgrades.longDash ? 1600 : 1000;
             health = 5;
             player2Health = 5;
@@ -1099,7 +1110,7 @@ R - Restart`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { 
             }
 
             setupTwoPlayerCollisions(scene);
-            if(!trollEventsStarted) { trollEventsStarted = true; startTrollEvents(scene); }
+            if(!trollEventsStarted && !isTwoPlayerMode) { startTrollEvents(scene); }
         }
 
         function setupLevel(scene, level) {
@@ -1251,7 +1262,7 @@ R - Restart`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { 
             }
 
             setupCollisions(scene);
-            if(!trollEventsStarted) { trollEventsStarted = true; startTrollEvents(scene); }
+            if(!trollEventsStarted) { startTrollEvents(scene); }
         }
 
         function setupTwoPlayerCollisions(scene) {
@@ -1268,6 +1279,10 @@ R - Restart`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { 
 
             activeColliders.push(scene.physics.add.collider(player, springs, (p, s) => { p.setVelocityY(gravityFlipped ? 1100 : -1100); SoundEngine.play('coin'); }));
             activeColliders.push(scene.physics.add.collider(player2, springs, (p, s) => { p.setVelocityY(gravityFlipped ? 1100 : -1100); SoundEngine.play('coin'); }));
+            activeColliders.push(scene.physics.add.collider(player, healSprings, (p, s) => { if ((!gravityFlipped && p.body.touching.down) || (gravityFlipped && p.body.touching.up)) { p.setVelocityY(gravityFlipped ? 900 : -900); if (health < 5) health++; healthText.setText('P1 Health: ' + health); SoundEngine.play('coin'); } }));
+            activeColliders.push(scene.physics.add.collider(player2, healSprings, (p, s) => { if ((!gravityFlipped && p.body.touching.down) || (gravityFlipped && p.body.touching.up)) { p.setVelocityY(gravityFlipped ? 900 : -900); if (player2Health < 5) player2Health++; player2HealthText.setText('P2 Health: ' + player2Health); SoundEngine.play('coin'); } }));
+            activeColliders.push(scene.physics.add.collider(player, badSprings, (p, s) => { p.setVelocityY(gravityFlipped ? 500 : -500); takeDamage(scene); scene.tweens.add({targets: s, scaleY: 0.5, duration: 50, yoyo: true}); }));
+            activeColliders.push(scene.physics.add.collider(player2, badSprings, (p, s) => { p.setVelocityY(gravityFlipped ? 500 : -500); takeDamage2Player(scene); scene.tweens.add({targets: s, scaleY: 0.5, duration: 50, yoyo: true}); }));
 
             activeColliders.push(scene.physics.add.collider(iceballs, [ground, platforms], (i) => i.destroy()));
             activeColliders.push(scene.physics.add.collider(iceballs, enemies, (i, e) => {
@@ -1353,10 +1368,10 @@ R - Restart`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { 
                         player2.clearTint();
                     });
                 } else if (type === 'invincible') {
-                    isInvincible = true;
+                    isInvincible2 = true;
                     player2.setTint(0xFFFF00);
                     scene.time.delayedCall(5000, () => {
-                        isInvincible = false;
+                        isInvincible2 = false;
                         player2.clearTint();
                     });
                 }
@@ -1394,7 +1409,7 @@ R - Restart`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { 
             activeColliders.push(scene.physics.add.overlap(player, deathGhost, (p, g) => { takeDamage(scene); g.x = 3000; g.y = 100; }));
 
             scene.physics.add.collider(player, springs, (p, s) => { p.setVelocityY(gravityFlipped ? 1100 : -1100); SoundEngine.play('coin'); });
-            scene.physics.add.collider(player, healSprings, (p, s) => { p.setVelocityY(gravityFlipped ? 900 : -900); if(health < 5) health++; healthText.setText('Health: ' + health); SoundEngine.play('coin'); });
+            scene.physics.add.collider(player, healSprings, (p, s) => { if ((!gravityFlipped && p.body.touching.down) || (gravityFlipped && p.body.touching.up)) { p.setVelocityY(gravityFlipped ? 900 : -900); if(health < 5) health++; healthText.setText('Health: ' + health); SoundEngine.play('coin'); } });
             scene.physics.add.collider(player, badSprings, (p, s) => { p.setVelocityY(gravityFlipped ? 500 : -500); takeDamage(scene); scene.tweens.add({targets: s, scaleY: 0.5, duration: 50, yoyo: true}); }); 
 
 if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal, (p, f) => { explodeParticles(scene, f.x, f.y, 0xFF0000, 30); f.destroy(); SoundEngine.play('hit'); for(let i=0; i<3; i++) enemies.create(f.x + (i*30 - 30), f.y - 50, 'trollImg').setVelocityX(150).setBounceX(1).setCollideWorldBounds(true).setDisplaySize(60, 45).setData('isTroll', true); }); }
@@ -1645,7 +1660,7 @@ if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal,
 
                 // Player 2 build blocks
                 if (Phaser.Input.Keyboard.JustDown(buildKey2)) {
-                    let block = buildBlocks.create(player2.x + (player2.flipX ? -50 : 50), player2.y - 50, 'platformTex');
+                    let block = buildBlocks.create(player2.x + (player2.flipX ? -50 : 50), player2.y - 50, 'blockTex');
                     block.setDisplaySize(50, 20);
                     block.body.allowGravity = false;
                     block.body.immovable = true;
@@ -1657,7 +1672,7 @@ if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal,
 
             // Player 1 build blocks
             if (Phaser.Input.Keyboard.JustDown(buildKey1) && isTwoPlayerMode) {
-                let block = buildBlocks.create(player.x + (player.flipX ? -50 : 50), player.y - 50, 'platformTex');
+                let block = buildBlocks.create(player.x + (player.flipX ? -50 : 50), player.y - 50, 'blockTex');
                 block.setDisplaySize(50, 20);
                 block.body.allowGravity = false;
                 block.body.immovable = true;
@@ -1809,14 +1824,14 @@ if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal,
         }
 
         function takeDamage2Player(scene) {
-            if (isInvincible || !gameActive) return;
+            if (isInvincible2 || !gameActive) return;
             player2Health--; player2HealthText.setText('P2 Health: ' + player2Health); SoundEngine.play('hit'); scene.cameras.main.shake(150, 0.01);
             score = Math.max(0, score - 30); scoreText.setText('Score: ' + score); 
             for(let i=0; i<3; i++) { let c = coinsGroup.create(player2.x, player2.y, 'coinTex'); c.setVelocity(Phaser.Math.Between(-200,200), -200); c.setBounce(0.5); c.setCollideWorldBounds(true); }
             
-            isInvincible = true; player2.setTint(0xFF0000);
+            isInvincible2 = true; player2.setTint(0xFF0000);
             scene.time.delayedCall(200, () => player2.clearTint()); scene.time.delayedCall(400, () => player2.setTint(0xFF0000));
-            scene.time.delayedCall(1000, () => { isInvincible = false; player2.clearTint(); });
+            scene.time.delayedCall(1000, () => { isInvincible2 = false; player2.clearTint(); });
             if (player2Health <= 0) { gameActive = false; player2.setTint(0xFF0000); centerText.setText('Game Over!\nPress R to restart').setVisible(true).setFill('#FF0000'); }
             taskState.noDamageRun = false;
         }
@@ -1850,30 +1865,30 @@ if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal,
         }
 
         function startTrollEvents(scene) {
-            if (isTwoPlayerMode) return; // Disable troll events in two-player mode
-            
-            scene.time.addEvent({ delay: 25000, loop: true, callback: () => {
+            if (isTwoPlayerMode || trollEventsStarted) return; // Disable troll events in two-player mode or on repeat
+            trollEventsStarted = true;
+            trollEventHandles.push(scene.time.addEvent({ delay: 25000, loop: true, callback: () => {
                 if(!gameActive) return; triggerDarknessSequence(scene);
-            }});
-            scene.time.addEvent({ delay: 28000, loop: true, callback: () => {
+            }}));
+            trollEventHandles.push(scene.time.addEvent({ delay: 28000, loop: true, callback: () => {
                 if(!gameActive) return; canJumpTroll = false; centerText.setText('Heavy Curse!').setVisible(true).setFill('#800080'); scene.time.delayedCall(3000, () => { canJumpTroll = true; if(gameActive) centerText.setVisible(false); });
-            }});
-            scene.time.addEvent({ delay: 22000, loop: true, callback: () => {
+            }}));
+            trollEventHandles.push(scene.time.addEvent({ delay: 22000, loop: true, callback: () => {
                 if(!gameActive) return; currentSpeed = 80; centerText.setText('Snail!').setVisible(true).setFill('#00FF00'); scene.time.delayedCall(4000, () => { currentSpeed = 250; if(gameActive) centerText.setVisible(false); });
-            }});
-            scene.time.addEvent({ delay: 18000, loop: true, callback: () => {
+            }}));
+            trollEventHandles.push(scene.time.addEvent({ delay: 18000, loop: true, callback: () => {
                 if(!gameActive) return; for(let i=0; i<10; i++) { let d = poisonDrops.create(player.x + Phaser.Math.Between(-400, 400), -50, 'poisonDropTex'); d.body.allowGravity = true; }
-            }});
-            scene.time.addEvent({ delay: 45000, loop: true, callback: () => {
+            }}));
+            trollEventHandles.push(scene.time.addEvent({ delay: 45000, loop: true, callback: () => {
                 if(!gameActive) return; scene.cameras.main.rotation = Math.PI; centerText.setText('Upside-down Camera!').setVisible(true).setFill('#FF00FF'); scene.time.delayedCall(3000, () => { scene.cameras.main.rotation = 0; if(gameActive) centerText.setVisible(false); });
-            }});
-            scene.time.addEvent({ delay: 20000, loop: true, callback: () => {
+            }}));
+            trollEventHandles.push(scene.time.addEvent({ delay: 20000, loop: true, callback: () => {
                 if(!gameActive) return; scene.cameras.main.shake(1000, 0.02); reverseControls = true; centerText.setText('Earthquake!').setVisible(true).setFill('#FF8C00'); scene.time.delayedCall(2000, () => { reverseControls = false; if(gameActive && !scene.cameras.main.rotation) centerText.setVisible(false); });
-            }});
-            scene.time.addEvent({ delay: 13000, loop: true, callback: () => {
+            }}));
+            trollEventHandles.push(scene.time.addEvent({ delay: 13000, loop: true, callback: () => {
                 if(!gameActive) return; let spike = fallingSpikes.create(player.x, 0, 'spikeTex'); spike.body.allowGravity = true; spike.setVelocityY(400);
-            }});
-            scene.time.addEvent({ delay: 35000, loop: true, callback: () => {
+            }}));
+            trollEventHandles.push(scene.time.addEvent({ delay: 35000, loop: true, callback: () => {
                 if(!gameActive || bombActive || currentLevel === 4) return;
                 bombActive = true; bombTimer = 10; bombText.setVisible(true);
                 defuseOrbs.create(player.x + Phaser.Math.Between(-300, 300), 400, 'defuseTex'); 
@@ -1882,7 +1897,7 @@ if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal,
                     bombTimer--; bombText.setText(bombTimer);
                     if(bombTimer <= 0) { clearInterval(bInterval); bombActive = false; bombText.setVisible(false); takeDamage(scene); takeDamage(scene); explodeParticles(scene, player.x, player.y, 0xFF0000, 50); }
                 }, 1000);
-            }});
+            }}));
         }
     </script>
 </body>
