@@ -137,13 +137,22 @@
         let taskState = { coinsRun: 0, enemiesRun: 0, noDamageRun: true, completed: {1:false,2:false,3:false}, claimed: {1:false,2:false,3:false} };
         let gameWasActiveBeforeTasks = false;
         let specialWeapon = null, playerSkin = false;
-        let superCharge = 0, superChargeMax = 3;
-        let superChargeText, superBarBg, superBarFill;
-        let isTwoPlayerMode = false;
-        let player2, player2Health = 5, player2HealthText;
-        let player2Wing, player2Mouth;
-        let buildBlocks, powerUps2Player;
-        let lavaSpots;
+        let combo = 0, comboTimer = 0, comboText;
+        let isRageMode = false, rageTimer = 0;
+        let cursedChestActive = false, cursedKillsNeeded = 10, cursedKills = 0;
+        let perfectDodgeTimer = 0, isPerfectDodging = false;
+        let fallingPlatforms;
+        let hiddenWalls;
+        let currentWeather = null;
+        let rainEmitter, windEmitter;
+        let windDirection = 1; // 1 for right, -1 for left
+        let isCurseActive = false;
+        let stamina = 100, maxStamina = 100;
+        let staminaText;
+        let originalSpeed = 250;
+        let isGroundPounding = false;
+        let redBlocks, blueBlocks;
+        let isRedSolid = true;
         
         // --- New shop variables and extras ---
         let isShopOpen = false, shopContainer;
@@ -468,12 +477,15 @@ R - Restart`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { 
             bombText = this.add.text(400, 80, '', { fontSize: '40px', fill: '#FF0000', fontStyle: 'bold', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(200).setVisible(false);
             centerText = this.add.text(400, 300, '', { fontSize: '24px', fill: '#FFF', fontStyle: 'bold', align:'center', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5).setScrollFactor(0).setDepth(200).setVisible(false);
             bossTalk = this.add.text(0, 0, '', { fontSize: '18px', fill: '#000', backgroundColor: '#FFF', padding: 5 }).setOrigin(0.5).setVisible(false).setDepth(25);
+            comboText = this.add.text(16, 168, 'Combo: 0', { fontSize: '18px', fill: '#FFFF00', stroke: '#000', strokeThickness: 2 }).setScrollFactor(0).setDepth(200);
+            staminaText = this.add.text(16, 196, 'Stamina: 100', { fontSize: '18px', fill: '#00FFFF', stroke: '#000', strokeThickness: 2 }).setScrollFactor(0).setDepth(200);
 
             cursors = this.input.keyboard.createCursorKeys(); keys = this.input.keyboard.addKeys('W,A,D,S,S,SPACE');
             restartKey = this.input.keyboard.addKey('R'); shootKey = this.input.keyboard.addKey('X'); dashKey = this.input.keyboard.addKey('Z'); coinRainKey = this.input.keyboard.addKey('C'); 
             shrinkKey = this.input.keyboard.addKey('S'); meteorKey = this.input.keyboard.addKey('M'); 
             gravToggleKey = this.input.keyboard.addKey('G'); superJumpKey = this.input.keyboard.addKey('U'); 
             shopKey = this.input.keyboard.addKey('N');
+            shiftKey = this.input.keyboard.addKey('SHIFT');
 
             // Two-player keys (arrow keys)
             key2Left = cursors.left;
@@ -504,6 +516,10 @@ R - Restart`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { 
             createShop(this); // create shop menu in the background
             createPermanentShop(this);
             createRunUpgradeMenu(this);
+            fallingPlatforms = this.physics.add.group();
+            hiddenWalls = this.physics.add.staticGroup();
+            redBlocks = this.physics.add.staticGroup();
+            blueBlocks = this.physics.add.staticGroup();
         }
 
         function createRunUpgradeMenu(scene) {
@@ -1110,7 +1126,7 @@ R - Restart`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { 
             }
 
             setupTwoPlayerCollisions(scene);
-            if(!trollEventsStarted && !isTwoPlayerMode) { startTrollEvents(scene); }
+            if(!trollEventsStarted && !isTwoPlayerMode && currentLevel !== 3 && currentLevel !== 5) { startTrollEvents(scene); }
         }
 
         function setupLevel(scene, level) {
@@ -1127,9 +1143,12 @@ R - Restart`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { 
             taskState.coinsRun = 0;
             taskState.enemiesRun = 0;
             taskState.noDamageRun = true;
+            stamina = maxStamina;
+            staminaText.setText('Stamina: ' + stamina);
 
             let groups = [ground, platforms, iceGround, mysteryBlocks, enemies, bats, goals, springs, healSprings, lasers, lava, fireballs, missiles, fallingSpikes, iceballs, coinsGroup, powerUps, defuseOrbs, portals, fakeCoins, homingFireballs, poisonDrops, badSprings];
             groups.forEach(g => { if(g) g.clear(true, true); });
+            redBlocks.clear(true, true); blueBlocks.clear(true, true);
             if(fogOverlay) { fogOverlay.destroy(); fogOverlay = null; }
             if(stage1BackgroundImage) { stage1BackgroundImage.destroy(); stage1BackgroundImage = null; }
             if(deathGhost) { deathGhost.destroy(); deathGhost = null; }
@@ -1173,7 +1192,8 @@ R - Restart`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { 
                 player = scene.physics.add.sprite(100, 450, 'playerImg').setBounce(0.1).setCollideWorldBounds(true).setDepth(50).setDisplaySize(40, 60);
                 scene.cameras.main.startFollow(player, true, 0.05, 0.05);
                 bubbleShield = scene.add.image(0, 0, 'bubbleTex').setAlpha(0).setDepth(51);
-                pet = scene.add.image(100, 400, 'petTex').setDepth(52);
+                pet = scene.physics.add.sprite(100, 400, 'petTex').setDepth(52);
+                pet.body.allowGravity = false;
                 playerWing = scene.add.image(player.x - 12, player.y - 10, 'dragonWingTex').setOrigin(0.5).setDepth(49);
                 playerMouth = scene.add.image(player.x + 10, player.y + 8, 'dragonMouthTex').setOrigin(0.5).setDepth(51);
                 scene.tweens.add({ targets: playerWing, angle: { from: -25, to: 25 }, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
@@ -1197,6 +1217,16 @@ R - Restart`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { 
                 mysteryBlocks.create(400, 250, 'blockTex').setData('used', false); springs.create(1600, 550, 'springTex');
                 badSprings.create(1100, 550, 'badSpringTex'); 
                 dragonCoinsGroup.create(1400, 450, 'dragonCoinTex').setBounce(0.5).setCollideWorldBounds(true);
+                let fallPlat = fallingPlatforms.create(1000, 400, 'platTex');
+                fallPlat.setData('fallTimer', 0);
+                fallPlat.body.allowGravity = false;
+                fallPlat.body.immovable = true;
+                let hidden = hiddenWalls.create(1500, 300, 'blockTex').setAlpha(0.1);
+                hidden.setData('revealed', false);
+                // switch blocks
+                redBlocks.create(600, 400, 'blockTex').setTint(0xFF0000);
+                blueBlocks.create(700, 400, 'blockTex').setTint(0x0000FF);
+                updateSwitchBlocks(scene);
             } else if (level === 2) {
                 [600, 1100, 1600, 2200].forEach((x, i) => { let p = platforms.create(x, 450 - (i*20), 'platTex'); p.body.checkCollision.down = false; });
 
@@ -1262,7 +1292,7 @@ R - Restart`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { 
             }
 
             setupCollisions(scene);
-            if(!trollEventsStarted) { startTrollEvents(scene); }
+            if(!trollEventsStarted && currentLevel !== 3 && currentLevel !== 5) { startTrollEvents(scene); }
         }
 
         function setupTwoPlayerCollisions(scene) {
@@ -1381,6 +1411,27 @@ R - Restart`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { 
             activeColliders.push(scene.physics.add.overlap(player2, lavaSpots, () => takeDamage2Player(scene)));
 
             activeColliders.push(scene.physics.add.overlap(player, coinsGroup, (p, c) => { let val = c.getData('diamond') ? 100 : 10; c.destroy(); score += val; scoreText.setText('Score: ' + score); SoundEngine.play('coin'); }));
+
+            scene.physics.add.overlap(pet, coinsGroup, (p, c) => { c.destroy(); score += 10; scoreText.setText('Score: ' + score); SoundEngine.play('coin'); });
+            activeColliders.push(scene.physics.add.collider(player, redBlocks));
+            activeColliders.push(scene.physics.add.collider(player, blueBlocks));
+
+            scene.physics.add.collider(iceballs, enemies, (ice, e) => { ice.destroy(); e.destroy(); score+=30; scoreText.setText('Score: ' + score); combo++; comboTimer = 3000; comboText.setText('Combo: ' + combo); if (combo >=5 && !isRageMode) { isRageMode = true; rageTimer = 5000; currentSpeed += 100; } explodeParticles(scene, e.x, e.y, 0xFF00FF, 20); if (cursedChestActive) { cursedKills++; if (cursedKills >= cursedKillsNeeded) { cursedChestActive = false; health = 3; healthText.setText('Health: ' + health); } } });
+            scene.physics.add.collider(iceballs, bats, (ice, b) => { ice.destroy(); b.destroy(); score+=40; scoreText.setText('Score: ' + score); combo++; comboTimer = 3000; comboText.setText('Combo: ' + combo); if (combo >=5 && !isRageMode) { isRageMode = true; rageTimer = 5000; currentSpeed += 100; } explodeParticles(scene, b.x, b.y, 0xFF00FF, 20); if (cursedChestActive) { cursedKills++; if (cursedKills >= cursedKillsNeeded) { cursedChestActive = false; health = 3; healthText.setText('Health: ' + health); } } });
+            scene.physics.add.collider(iceballs, player, (ice, p) => {
+                if (isTwoPlayerMode && ice.getData('owner') === 'player2') {
+                    takeDamagePlayer1(scene);
+                    ice.destroy();
+                }
+            });
+            scene.physics.add.collider(iceballs, player2, (ice, p2) => {
+                if (isTwoPlayerMode && ice.getData('owner') === 'player1') {
+                    takeDamage2Player(scene);
+                    ice.destroy();
+                }
+            });
+            scene.physics.add.overlap(player, mysteryBlocks, (p, b) => { if (!b.getData('used')) { b.setData('used', true); b.setTint(0x888888); if (Phaser.Math.Between(0,10) < 3) { cursedChestActive = true; health = 1; healthText.setText('Health: ' + health); cursedKills = 0; } else { score += 100; scoreText.setText('Score: ' + score); SoundEngine.play('coin'); } } });
+        }
         }
 
         function setupCollisions(scene) {
@@ -1458,7 +1509,10 @@ if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal,
             scene.physics.add.collider(iceballs, bats, (i, b) => { b.destroy(); i.destroy(); score+=40; SoundEngine.play('hit'); explodeParticles(scene, b.x, b.y, 0x00FFFF, 10); });
             
             scene.physics.add.collider(player, enemies, (p, e) => {
-                if ((!gravityFlipped && p.body.touching.down && e.body.touching.up && p.body.velocity.y > 0) || (gravityFlipped && p.body.touching.up && e.body.touching.down && p.body.velocity.y < 0)) { 
+                if (isGroundPounding) {
+                    e.destroy(); score += 30; scoreText.setText('Score: ' + score); taskState.enemiesRun += 1; if (taskState.enemiesRun >= 8) taskState.completed[2] = true; updateTaskOverlay(); incrementSuperCharge(); SoundEngine.play('hit'); explodeParticles(scene, e.x, e.y, 0xFF0000, 20);
+                    p.setVelocityY(-300); isGroundPounding = false;
+                } else if ((!gravityFlipped && p.body.touching.down && e.body.touching.up && p.body.velocity.y > 0) || (gravityFlipped && p.body.touching.up && e.body.touching.down && p.body.velocity.y < 0)) { 
                     p.setVelocityY(gravityFlipped ? (superJumpActive ? 900 : 600) : (superJumpActive ? -600 : -350));
                     if(e.getData('isGiant')) { e.setData('hp', e.getData('hp') - 1); e.setTint(0xFF0000); scene.time.delayedCall(100, () => e.clearTint()); SoundEngine.play('hit'); if(e.getData('hp') <= 0) { e.destroy(); score+=50; taskState.enemiesRun += 1; if (taskState.enemiesRun >= 8) taskState.completed[2] = true; scoreText.setText('Score: ' + score); updateTaskOverlay(); explodeParticles(scene, e.x, e.y, 0xFFFFFF, 30); } }
                     else { e.destroy(); score+=20; taskState.enemiesRun += 1; if (taskState.enemiesRun >= 8) taskState.completed[2] = true; scoreText.setText('Score: ' + score); updateTaskOverlay(); incrementSuperCharge(); SoundEngine.play('jump'); explodeParticles(scene, e.x, e.y, Math.random()*0xFFFFFF, 20); } 
@@ -1493,7 +1547,23 @@ if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal,
             if (!gameActive && !isShopOpen) return; // do not run while shop is open
 
             if(deathGhost && deathGhost.active) { this.physics.moveToObject(deathGhost, player, 60); }
-            if(pet) { pet.x += (player.x - 30 - pet.x) * 0.05; pet.y += (player.y - 30 - pet.y) * 0.05; }
+            if(pet) {
+                let closestCoin = null;
+                let minDist = 200;
+                coinsGroup.getChildren().forEach(c => {
+                    let dist = Phaser.Math.Distance.Between(pet.x, pet.y, c.x, c.y);
+                    if (dist < minDist) {
+                        minDist = dist;
+                        closestCoin = c;
+                    }
+                });
+                if (closestCoin) {
+                    this.physics.moveToObject(pet, closestCoin, 200);
+                } else {
+                    pet.body.velocity.x = (player.x - 30 - pet.x) * 0.1;
+                    pet.body.velocity.y = (player.y - 30 - pet.y) * 0.1;
+                }
+            }
             if(currentLevel === 2) { player.body.velocity.x -= 2; } 
 
             bats.getChildren().forEach(b => { if(Phaser.Math.Distance.Between(b.x, b.y, player.x, player.y) < 400) this.physics.moveToObject(b, player, 150); });
@@ -1516,17 +1586,27 @@ if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal,
             }
 
             let isTouchingGround = gravityFlipped ? player.body.touching.up : player.body.touching.down;
-            if (isTouchingGround) { canDoubleJump = true; }
+            if (isTouchingGround) { canDoubleJump = true; if (isGroundPounding) { this.cameras.main.shake(200, 0.01); explodeParticles(this, player.x, player.y, 0x888888, 15); isGroundPounding = false; } }
             
             if (canJumpTroll && Phaser.Input.Keyboard.JustDown(!isTwoPlayerMode ? cursors.up : keys.W)) {
                 let jv = superJumpActive ? 900 : 600;
                 if (isTouchingGround) { player.setVelocityY(gravityFlipped ? jv : -jv); SoundEngine.play('jump'); } 
                 else if (canDoubleJump) { player.setVelocityY(gravityFlipped ? (jv-100) : -(jv-100)); canDoubleJump = false; SoundEngine.play('jump'); }
+                isRedSolid = !isRedSolid;
+                updateSwitchBlocks(this);
+                SoundEngine.play('coin');
             }
 
             if ((!isTwoPlayerMode ? cursors.up : cursors.space).isDown) { 
                 player.setVelocityY(gravityFlipped ? 300 : -300); 
                 explodeParticles(this, player.x, player.y+(gravityFlipped?-15:15), 0xFFA500, 2); 
+            }
+
+            // ground pound
+            if (!isTouchingGround && (cursors.down.isDown || keys.S.isDown) && !isGroundPounding) {
+                isGroundPounding = true;
+                player.setVelocityY(1500);
+                explodeParticles(this, player.x, player.y, 0xFFFF00, 10);
             }
 
             if (Phaser.Input.Keyboard.JustDown(gravToggleKey) && score >= 50) { score -= 50; scoreText.setText('Score: ' + score); SoundEngine.play('coin'); flipGravity(this, 3000); }
@@ -1552,16 +1632,18 @@ if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal,
                         ice.setVelocityY((index - 1) * 100);
                         ice.body.allowGravity = false;
                         ice.setDisplaySize(40, 40);
+                        ice.setData('owner', 'player1');
                     });
                 } else {
                     let ice = iceballs.create(player.x, player.y, 'chatGPTImageTex');
                     ice.setVelocityX(player.flipX ? -500 : 500);
                     ice.body.allowGravity = false;
                     ice.setDisplaySize(40, 40);
+                    ice.setData('owner', 'player1');
                 }
             }
             
-            if (Phaser.Input.Keyboard.JustDown(dashKey) && canDash) { canDash = false; player.setVelocityX(player.flipX ? -dashSpeed : dashSpeed); SoundEngine.play('shoot'); this.time.delayedCall(1000, () => canDash = true); }
+            if (Phaser.Input.Keyboard.JustDown(dashKey) && canDash) { canDash = false; player.setVelocityX(player.flipX ? -dashSpeed : dashSpeed); SoundEngine.play('shoot'); isPerfectDodging = true; perfectDodgeTimer = 200; this.time.delayedCall(1000, () => canDash = true); }
             if (Phaser.Input.Keyboard.JustDown(coinRainKey) && !usedCoinRain) { usedCoinRain = true; SoundEngine.play('coin'); for(let i=0; i<20; i++) { let c = coinsGroup.create(player.x + Phaser.Math.Between(-200, 200), player.y - Phaser.Math.Between(300, 600), 'coinTex'); c.setBounce(0.5); c.setCollideWorldBounds(true); } }
 
             // attack drone logic (new!)
@@ -1664,6 +1746,7 @@ if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal,
                     ice.setVelocityX(player2.flipX ? -500 : 500);
                     ice.body.allowGravity = false;
                     ice.setDisplaySize(40, 40);
+                    ice.setData('owner', 'player2');
                 }
 
                 // Player 2 build blocks
@@ -1689,6 +1772,78 @@ if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal,
 
             let scroll = this.cameras.main.scrollX;
             if(bgFront) bgFront.tilePositionX = scroll * 0.6;
+
+            // combo timer
+            if (comboTimer > 0) {
+                comboTimer -= delta;
+                if (comboTimer <= 0) {
+                    combo = 0;
+                    comboText.setText('Combo: 0');
+                    if (isRageMode) {
+                        isRageMode = false;
+                        currentSpeed -= 100;
+                    }
+                }
+            }
+            // rage timer
+            if (rageTimer > 0) {
+                rageTimer -= delta;
+                if (rageTimer <= 0) {
+                    isRageMode = false;
+                    currentSpeed -= 100;
+                }
+            }
+            // perfect dodge timer
+            if (perfectDodgeTimer > 0) {
+                perfectDodgeTimer -= delta;
+                if (perfectDodgeTimer <= 0) isPerfectDodging = false;
+            }
+            // falling platforms
+            fallingPlatforms.getChildren().forEach(p => {
+                if (p.body.touching.up && player.body.touching.down) {
+                    if (p.getData('fallTimer') === 0) p.setData('fallTimer', time);
+                }
+                if (p.getData('fallTimer') > 0 && time - p.getData('fallTimer') > 1000) {
+                    p.setVelocityY(200);
+                    p.body.allowGravity = true;
+                    p.body.immovable = false;
+                }
+            });
+            // hidden walls
+            hiddenWalls.getChildren().forEach(w => {
+                if (!w.getData('revealed') && Phaser.Geom.Rectangle.Overlaps(player.getBounds(), w.getBounds()) && player.body.velocityY < 0) {
+                    w.setAlpha(0);
+                    w.body.enable = false;
+                    w.setData('revealed', true);
+                    // reveal secret
+                    for (let i = 0; i < 5; i++) {
+                        let coin = coinsGroup.create(w.x + Phaser.Math.Between(-50,50), w.y - 50, 'coinTex');
+                        coin.setVelocity(0, -200);
+                    }
+                }
+            });
+
+            updateEnemiesAI(this);
+
+            // weather effects
+            if (currentWeather === 'wind' && currentLevel === 4 && player.body.touching.down) {
+                player.body.velocity.x += windDirection * 5;
+            }
+
+            // bullet time
+            if (shiftKey.isDown && stamina > 0) {
+                this.physics.world.timeScale = 0.5;
+                this.cameras.main.setTint(0x87CEEB);
+                currentSpeed = 500;
+                stamina -= 0.5;
+                staminaText.setText('Stamina: ' + Math.floor(stamina));
+            } else {
+                this.physics.world.timeScale = 1;
+                this.cameras.main.clearTint();
+                currentSpeed = originalSpeed;
+                if (stamina < maxStamina) stamina += 0.2;
+                staminaText.setText('Stamina: ' + Math.floor(stamina));
+            }
         }
 
         function hitBoss(scene, bTarget, damage) {
@@ -1697,6 +1852,7 @@ if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal,
 
             let hp = bTarget.getData('hp') - damage;
             bTarget.setData('hp', hp); bTarget.setTint(0xFF0000); scene.time.delayedCall(100, () => bTarget.clearTint()); SoundEngine.play('hit');
+            scene.physics.world.pause(); scene.time.delayedCall(50, () => scene.physics.world.resume());
             
             if (hp <= 5 && !bTarget.getData('enraged')) bTarget.setData('enraged', true);
             if (hp <= 0) { 
@@ -1844,6 +2000,92 @@ if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal,
             taskState.noDamageRun = false;
         }
 
+        function takeDamagePlayer1(scene) {
+            if (isInvincible || !gameActive) return;
+            if (isPerfectDodging) {
+                isPerfectDodging = false;
+                currentSpeed += 50;
+                scene.time.delayedCall(3000, () => currentSpeed -= 50);
+                return;
+            }
+            health--; healthText.setText('Health: ' + health); SoundEngine.play('hit'); scene.cameras.main.shake(150, 0.01);
+            score = Math.max(0, score - 30); scoreText.setText('Score: ' + score); 
+            for(let i=0; i<3; i++) { let c = coinsGroup.create(player.x, player.y, 'coinTex'); c.setVelocity(Phaser.Math.Between(-200,200), -200); c.setBounce(0.5); c.setCollideWorldBounds(true); }
+            
+            isInvincible = true; player.setTint(0xFF0000);
+            scene.time.delayedCall(200, () => player.clearTint()); scene.time.delayedCall(400, () => player.setTint(0xFF0000));
+            scene.time.delayedCall(1000, () => { isInvincible = false; player.clearTint(); });
+            scene.physics.world.pause(); scene.time.delayedCall(50, () => scene.physics.world.resume());
+            if (health <= 0) { gameActive = false; player.setTint(0xFF0000); centerText.setText('Game Over!\nPress R to restart').setVisible(true).setFill('#FF0000'); }
+            taskState.noDamageRun = false;
+        }
+
+        function updateEnemiesAI(scene) {
+            enemies.getChildren().forEach(e => {
+                let dist = Phaser.Math.Distance.Between(e.x, e.y, player.x, player.y);
+                if (dist < 300) {
+                    e.setTint(0xFF0000);
+                    let dir = e.x < player.x ? 1 : -1;
+                    e.setVelocityX(dir * 200);
+                    e.body.bounce.x = 0;
+                } else {
+                    e.clearTint();
+                    e.body.bounce.x = 1;
+                    // velocity will be handled by bounce
+                }
+            });
+        }
+
+        function startWeatherEvent(scene, type) {
+            if (currentWeather || currentLevel !== 4) return;
+            currentWeather = type;
+            if (type === 'rain') {
+                rainEmitter = scene.add.particles(0, 0, 'particleTex', {
+                    x: { min: 100, max: 700 }, // from cloud areas
+                    y: 0,
+                    speedY: { min: 200, max: 400 },
+                    speedX: { min: -50, max: 50 },
+                    scale: { start: 0.5, end: 0 },
+                    lifespan: 3000,
+                    quantity: 2
+                });
+                // reduce friction on ground only in level 4
+                if (player.body) player.body.friction.x = 0.1;
+            } else if (type === 'wind') {
+                windEmitter = scene.add.particles(0, 300, 'particleTex', {
+                    x: 0,
+                    y: { min: 0, max: 600 },
+                    speedX: windDirection * 300,
+                    speedY: 0,
+                    scale: { start: 0.5, end: 0 },
+                    lifespan: 2000,
+                    quantity: 1
+                });
+                // wind force will be applied in update only in level 4
+            }
+        }
+
+        function stopWeather(scene) {
+            if (currentWeather === 'rain') {
+                if (rainEmitter) rainEmitter.destroy();
+                if (player.body) player.body.friction.x = 1;
+            } else if (currentWeather === 'wind') {
+                if (windEmitter) windEmitter.destroy();
+            }
+            currentWeather = null;
+        }
+
+        function updateSwitchBlocks(scene) {
+            redBlocks.getChildren().forEach(b => {
+                b.body.enable = isRedSolid;
+                b.setAlpha(isRedSolid ? 1 : 0.3);
+            });
+            blueBlocks.getChildren().forEach(b => {
+                b.body.enable = !isRedSolid;
+                b.setAlpha(!isRedSolid ? 1 : 0.3);
+            });
+        }
+
         function startBossAI(scene) {
             scene.time.addEvent({ delay: 1500, loop: true, callback: () => {
                 if (!gameActive) return;
@@ -1873,7 +2115,7 @@ if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal,
         }
 
         function startTrollEvents(scene) {
-            if (isTwoPlayerMode || trollEventsStarted) return; // Disable troll events in two-player mode or on repeat
+            if (isTwoPlayerMode || trollEventsStarted || isCurseActive) return; // Disable troll events in two-player mode or on repeat
             trollEventsStarted = true;
             trollEventHandles.push(scene.time.addEvent({ delay: 25000, loop: true, callback: () => {
                 if(!gameActive) return; triggerDarknessSequence(scene);
