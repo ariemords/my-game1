@@ -469,7 +469,7 @@ R - Restart`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { 
             centerText = this.add.text(400, 300, '', { fontSize: '24px', fill: '#FFF', fontStyle: 'bold', align:'center', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5).setScrollFactor(0).setDepth(200).setVisible(false);
             bossTalk = this.add.text(0, 0, '', { fontSize: '18px', fill: '#000', backgroundColor: '#FFF', padding: 5 }).setOrigin(0.5).setVisible(false).setDepth(25);
 
-            cursors = this.input.keyboard.createCursorKeys(); keys = this.input.keyboard.addKeys('W,A,D,SPACE');
+            cursors = this.input.keyboard.createCursorKeys(); keys = this.input.keyboard.addKeys('W,A,D,S,S,SPACE');
             restartKey = this.input.keyboard.addKey('R'); shootKey = this.input.keyboard.addKey('X'); dashKey = this.input.keyboard.addKey('Z'); coinRainKey = this.input.keyboard.addKey('C'); 
             shrinkKey = this.input.keyboard.addKey('S'); meteorKey = this.input.keyboard.addKey('M'); 
             gravToggleKey = this.input.keyboard.addKey('G'); superJumpKey = this.input.keyboard.addKey('U'); 
@@ -1542,7 +1542,7 @@ if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal,
             }
             
             // shooting with new shootDelay variable (upgrades via shop)
-            if (Phaser.Input.Keyboard.JustDown(!isTwoPlayerMode ? cursors.down : shootKey) && hasIcePower && time > lastShotTime + shootDelay) {
+            if (Phaser.Input.Keyboard.JustDown(isTwoPlayerMode ? keys.S : cursors.down) && hasIcePower && time > lastShotTime + shootDelay) {
                 lastShotTime = time;
                 SoundEngine.play('shoot');
                 if (specialWeapon === 'ultimateIce') {
