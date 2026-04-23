@@ -104,8 +104,8 @@
         let portals, fakeCoins, homingFireballs; 
         let deathGhost, poisonDrops, badSprings; 
         
-        let cursors, keys, restartKey, shootKey, dashKey, coinRainKey, shrinkKey, meteorKey, gravToggleKey, superJumpKey, shopKey, permShopKey;
-        let key2Left, key2Right, key2Jump, key2Shoot; 
+        let cursors, keys, restartKey, shootKey, dashKey, coinRainKey, shrinkKey, meteorKey, gravToggleKey, superJumpKey, shopKey, permShopKey, shiftKey;
+        let key2Left, key2Right, key2Jump, key2Shoot, buildKey1, buildKey2; 
         
         let score = 0, health = 3, bossHealth = 10, currentLevel = 1;
         let dragonCoins = 0;
@@ -162,7 +162,7 @@
 
         let scoreText, healthText, bossHealthText, centerText, levelText, bombText, bossTalk;
         let superCharge = 0, superChargeMax = 3;
-let superChargeText, superBarBg, superBarFill;
+        let superChargeText, superBarBg, superBarFill;
         let dragonCoinText, permUpgradesText;
         let pet, bubbleShield, fogOverlay;
         let playerWing, playerMouth;
@@ -1545,7 +1545,7 @@ if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal,
             scene.physics.add.overlap(player, coinsGroup, (p, c) => { let val = c.getData('diamond') ? 100 : 10; c.destroy(); score += val; scoreText.setText('Score: ' + score); SoundEngine.play('coin'); taskState.coinsRun += 1; if (taskState.coinsRun >= 40) taskState.completed[1] = true; updateTaskOverlay(); });
         }
 
-        function update(time) {
+        function update(time, delta) {
             if (!gameActive && !isShopOpen) return; // do not run while shop is open
 
             if(deathGhost && deathGhost.active) { this.physics.moveToObject(deathGhost, player, 60); }
