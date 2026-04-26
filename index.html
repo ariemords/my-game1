@@ -104,8 +104,8 @@
         let portals, fakeCoins, homingFireballs; 
         let deathGhost, poisonDrops, badSprings; 
         
-        let cursors, keys, restartKey, shootKey, dashKey, coinRainKey, shrinkKey, meteorKey, gravToggleKey, superJumpKey, shopKey, permShopKey, shiftKey;
-        let key2Left, key2Right, key2Jump, key2Shoot, buildKey1, buildKey2; 
+        let cursors, keys, restartKey, shootKey, dashKey, coinRainKey, shrinkKey, meteorKey, gravToggleKey, superJumpKey, shopKey, permShopKey;
+        let key2Left, key2Right, key2Jump, key2Shoot; 
         
         let score = 0, health = 3, bossHealth = 10, currentLevel = 1;
         let dragonCoins = 0;
@@ -141,8 +141,14 @@
         let isRageMode = false, rageTimer = 0;
         let cursedChestActive = false, cursedKillsNeeded = 10, cursedKills = 0;
         let perfectDodgeTimer = 0, isPerfectDodging = false;
-        let fallingPlatforms;
-        let hiddenWalls;
+        
+        // --- קבוצות הבעייתיות הוכרזו כאן מראש ---
+        let fallingPlatforms, hiddenWalls, redBlocks, blueBlocks;
+        let buildBlocks, powerUps2Player, lavaSpots;
+        let player2, player2Health = 5, player2HealthText;
+        let player2Wing, player2Mouth;
+        let isTwoPlayerMode = false;
+        
         let currentWeather = null;
         let rainEmitter, windEmitter;
         let windDirection = 1; // 1 for right, -1 for left
@@ -151,7 +157,6 @@
         let staminaText;
         let originalSpeed = 250;
         let isGroundPounding = false;
-        let redBlocks, blueBlocks;
         let isRedSolid = true;
         
         // --- New shop variables and extras ---
@@ -513,15 +518,18 @@ R - Restart`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { 
             this.input.keyboard.on('keydown-R', () => { window.location.reload(); });
 
             loadPermanentProgress();
+            
+            // יצירת הקבוצות לפני קריאה ל-setupLevel כדי למנוע את הקריסה
+            fallingPlatforms = this.physics.add.group();
+            hiddenWalls = this.physics.add.staticGroup();
+            redBlocks = this.physics.add.staticGroup();
+            blueBlocks = this.physics.add.staticGroup();
+
             setupLevel(this, 1);
             updatePermanentUI();
             createShop(this); // create shop menu in the background
             createPermanentShop(this);
             createRunUpgradeMenu(this);
-            fallingPlatforms = this.physics.add.group();
-            hiddenWalls = this.physics.add.staticGroup();
-            redBlocks = this.physics.add.staticGroup();
-            blueBlocks = this.physics.add.staticGroup();
         }
 
         function createRunUpgradeMenu(scene) {
@@ -1064,6 +1072,11 @@ R - Restart`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { 
             if(stage1BackgroundImage) { stage1BackgroundImage.destroy(); stage1BackgroundImage = null; }
             if(deathGhost) { deathGhost.destroy(); deathGhost = null; }
 
+            if (fallingPlatforms) fallingPlatforms.clear(true, true);
+            if (hiddenWalls) hiddenWalls.clear(true, true);
+            if (redBlocks) redBlocks.clear(true, true);
+            if (blueBlocks) blueBlocks.clear(true, true);
+
             ground = scene.physics.add.staticGroup(); platforms = scene.physics.add.staticGroup(); iceGround = scene.physics.add.staticGroup(); mysteryBlocks = scene.physics.add.staticGroup();
             goals = scene.physics.add.staticGroup(); springs = scene.physics.add.staticGroup(); healSprings = scene.physics.add.staticGroup(); lasers = scene.physics.add.staticGroup(); lava = scene.physics.add.staticGroup();
             enemies = scene.physics.add.group(); bats = scene.physics.add.group({allowGravity: false}); fireballs = scene.physics.add.group({allowGravity: false}); missiles = scene.physics.add.group({allowGravity: false}); fallingSpikes = scene.physics.add.group(); iceballs = scene.physics.add.group({allowGravity: false}); coinsGroup = scene.physics.add.group(); dragonCoinsGroup = scene.physics.add.group();
@@ -1150,7 +1163,10 @@ R - Restart`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { 
 
             let groups = [ground, platforms, iceGround, mysteryBlocks, enemies, bats, goals, springs, healSprings, lasers, lava, fireballs, missiles, fallingSpikes, iceballs, coinsGroup, powerUps, defuseOrbs, portals, fakeCoins, homingFireballs, poisonDrops, badSprings];
             groups.forEach(g => { if(g) g.clear(true, true); });
-            redBlocks.clear(true, true); blueBlocks.clear(true, true);
+            if (redBlocks) redBlocks.clear(true, true); 
+            if (blueBlocks) blueBlocks.clear(true, true);
+            if (fallingPlatforms) fallingPlatforms.clear(true, true);
+            if (hiddenWalls) hiddenWalls.clear(true, true);
             if(fogOverlay) { fogOverlay.destroy(); fogOverlay = null; }
             if(stage1BackgroundImage) { stage1BackgroundImage.destroy(); stage1BackgroundImage = null; }
             if(deathGhost) { deathGhost.destroy(); deathGhost = null; }
@@ -1545,7 +1561,7 @@ if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal,
             scene.physics.add.overlap(player, coinsGroup, (p, c) => { let val = c.getData('diamond') ? 100 : 10; c.destroy(); score += val; scoreText.setText('Score: ' + score); SoundEngine.play('coin'); taskState.coinsRun += 1; if (taskState.coinsRun >= 40) taskState.completed[1] = true; updateTaskOverlay(); });
         }
 
-        function update(time, delta) {
+        function update(time) {
             if (!gameActive && !isShopOpen) return; // do not run while shop is open
 
             if(deathGhost && deathGhost.active) { this.physics.moveToObject(deathGhost, player, 60); }
@@ -1776,7 +1792,7 @@ if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal,
             if(bgFront) bgFront.tilePositionX = scroll * 0.6;
 
             // combo timer
-            if (comboTimer > 0) {
+            if (typeof delta !== 'undefined' && comboTimer > 0) {
                 comboTimer -= delta;
                 if (comboTimer <= 0) {
                     combo = 0;
@@ -1788,7 +1804,7 @@ if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal,
                 }
             }
             // rage timer
-            if (rageTimer > 0) {
+            if (typeof delta !== 'undefined' && rageTimer > 0) {
                 rageTimer -= delta;
                 if (rageTimer <= 0) {
                     isRageMode = false;
@@ -1796,7 +1812,7 @@ if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal,
                 }
             }
             // perfect dodge timer
-            if (perfectDodgeTimer > 0) {
+            if (typeof delta !== 'undefined' && perfectDodgeTimer > 0) {
                 perfectDodgeTimer -= delta;
                 if (perfectDodgeTimer <= 0) isPerfectDodging = false;
             }
@@ -1833,13 +1849,13 @@ if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal,
             }
 
             // bullet time
-            if (shiftKey.isDown && stamina > 0) {
+            if (shiftKey && shiftKey.isDown && stamina > 0) {
                 this.physics.world.timeScale = 0.5;
                 this.cameras.main.setTint(0x87CEEB);
                 currentSpeed = 500;
                 stamina -= 0.5;
                 staminaText.setText('Stamina: ' + Math.floor(stamina));
-            } else {
+            } else if (shiftKey) {
                 this.physics.world.timeScale = 1;
                 this.cameras.main.clearTint();
                 currentSpeed = originalSpeed;
