@@ -81,8 +81,8 @@
         let portals, fakeCoins, homingFireballs; 
         let deathGhost, poisonDrops, badSprings; 
         
-        let cursors, keys, restartKey, shootKey, dashKey, coinRainKey, shrinkKey, meteorKey, gravToggleKey, superJumpKey, shopKey, permShopKey;
-        let key2Left, key2Right, key2Jump, key2Shoot; 
+        let cursors, keys, restartKey, shootKey, dashKey, coinRainKey, shrinkKey, meteorKey, gravToggleKey, superJumpKey, shopKey, permShopKey, shiftKey;
+        let key2Left, key2Right, key2Jump, key2Shoot, buildKey1, buildKey2; 
         
         let score = 0, health = 3, bossHealth = 10, currentLevel = 1;
         let dragonCoins = 0;
@@ -127,17 +127,18 @@
         
         let currentWeather = null;
         let rainEmitter, windEmitter;
-        let windDirection = 1; // 1 for right, -1 for left
+        let windDirection = 1; 
         let isCurseActive = false;
         let stamina = 100, maxStamina = 100;
         let staminaText;
         let originalSpeed = 250;
         let isGroundPounding = false;
         let isRedSolid = true;
+        let lastDownPressTime = 0; // טיימר ללחיצה הכפולה
         
         let isShopOpen = false, shopContainer;
-        let shootDelay = 500;
-        let attackDrone = null, hasDrone = false, lastDroneShot = 0;
+        let shootDelay = 500; 
+        let attackDrone = null, hasDrone = false, lastDroneShot = 0; 
 
         let scoreText, healthText, bossHealthText, centerText, levelText, bombText, bossTalk;
         let superCharge = 0, superChargeMax = 3;
@@ -174,9 +175,7 @@
             g.fillStyle(0x555555); g.fillRect(4, 0, 24, 8); g.fillStyle(0x777777); g.fillRect(0, 8, 32, 16); g.fillStyle(0x333333); g.fillRect(8, 12, 16, 8); g.fillStyle(0x00FF00); g.fillRect(12, 14, 2, 2); g.fillRect(18, 14, 2, 2); g.fillStyle(0x444444); g.fillRect(4, 24, 8, 8); g.fillRect(20, 24, 8, 8); g.generateTexture('playerTex', 32, 32); g.clear();
             g.fillStyle(0x800080, 0.9); g.fillCircle(16, 16, 14); g.fillStyle(0xFFFFFF); g.fillCircle(12, 14, 4); g.fillCircle(20, 14, 4); g.fillStyle(0x000000); g.fillCircle(12, 14, 2); g.fillCircle(20, 14, 2); g.generateTexture('enemyTex', 32, 32); g.clear();
             g.fillStyle(0x222222); g.fillRect(12, 12, 8, 8); g.fillStyle(0x444444); g.moveTo(12, 12); g.lineTo(0, 4); g.lineTo(12, 16); g.fill(); g.moveTo(20, 12); g.lineTo(32, 4); g.lineTo(20, 16); g.fill(); g.fillStyle(0xFF0000); g.fillRect(14, 14, 1, 1); g.fillRect(17, 14, 1, 1); g.generateTexture('batTex', 32, 32); g.clear();
-            
             g.fillStyle(0xAAAAAA); g.fillTriangle(60, 40, 20, -20, 140, -10); g.fillTriangle(80, 40, 50, -30, 160, -5); g.fillStyle(0x777777); g.fillRect(40, 40, 60, 30); g.fillStyle(0x999999); g.fillRect(10, 20, 40, 25); g.fillStyle(0x444444); g.fillRect(0, 30, 25, 10); g.fillStyle(0xFF0000); g.fillRect(25, 25, 6, 6); g.fillStyle(0xAAAAAA); g.fillTriangle(100, 60, 160, 30, 160, 80); g.fillStyle(0xFFFFFF); g.fillTriangle(20, 20, 25, 5, 30, 20); g.fillTriangle(50, 40, 55, 25, 60, 40); g.fillTriangle(70, 40, 75, 25, 80, 40); g.fillTriangle(140, 55, 155, 45, 145, 65); g.generateTexture('realDragon', 170, 100); g.clear();
-
             g.fillStyle(0x8B4513); g.fillRect(0, 0, 400, 40); g.fillStyle(0x228B22); g.fillRect(0, 0, 400, 8); g.generateTexture('groundTex', 400, 40); g.clear();
             g.fillStyle(0x00FFFF, 0.5); g.fillRect(0, 0, 400, 40); g.generateTexture('iceGroundTex', 400, 40); g.clear();
             g.fillStyle(0xDEB887); g.fillRect(0, 0, 150, 20); g.generateTexture('platTex', 150, 20); g.clear();
@@ -213,7 +212,6 @@
             g.fillStyle(0x222222, 0.9); g.fillCircle(16,16,16); g.fillStyle(0xFF0000); g.fillCircle(10,14,4); g.fillCircle(22,14,4); g.generateTexture('ghostTex', 32, 32); g.clear();
             g.fillStyle(0x00FF00); g.fillCircle(4,4,4); g.generateTexture('poisonDropTex', 8, 8); g.clear();
             g.fillStyle(0xFF0000); g.fillRect(0, 0, 32, 16); g.generateTexture('badSpringTex', 32, 16); g.clear();
-
             g.fillStyle(0x888888); g.fillCircle(10, 10, 10); g.fillStyle(0x00FFFF); g.fillCircle(10, 10, 4); g.generateTexture('droneTex', 20, 20); g.clear();
             g.fillStyle(0x00FFFF); g.fillCircle(4, 4, 4); g.generateTexture('plasmaTex', 8, 8); g.clear();
             g.fillStyle(0x3B1F0B); g.fillRect(0, 0, 24, 4); g.fillStyle(0x8B4513); g.fillRect(0, 2, 24, 2); g.fillStyle(0xFFFF00); g.fillRect(22, 1, 4, 2); g.generateTexture('wandTex', 28, 6); g.clear();
@@ -452,7 +450,6 @@
             staminaText = this.add.text(16, 196, 'Stamina: 100', { fontSize: '18px', fill: '#00FFFF', stroke: '#000', strokeThickness: 2 }).setScrollFactor(0).setDepth(200);
 
             cursors = this.input.keyboard.createCursorKeys(); 
-            // הוספת ה-Q וה-E
             keys = this.input.keyboard.addKeys('W,A,D,S,Q,E,SPACE');
             restartKey = this.input.keyboard.addKey('R'); shootKey = this.input.keyboard.addKey('X'); dashKey = this.input.keyboard.addKey('Z'); coinRainKey = this.input.keyboard.addKey('C'); 
             shrinkKey = this.input.keyboard.addKey('S'); meteorKey = this.input.keyboard.addKey('M'); 
@@ -460,24 +457,20 @@
             shopKey = this.input.keyboard.addKey('N');
             shiftKey = this.input.keyboard.addKey('SHIFT');
 
-            // Two-player keys (arrow keys)
             key2Left = cursors.left;
             key2Right = cursors.right;
             key2Jump = cursors.up;
             key2Shoot = cursors.down;
             
-            // שינוי ה-E לבנייה כדי שלא יתנגש עם ה-Q של הירייה
             buildKey1 = this.input.keyboard.addKey('E');
             buildKey2 = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.PLUS);
 
             createHomeMenu(this);
             
-            // התיקון הקריטי: מתחיל משחק *רק* אם אנחנו בתפריט הראשי!
             this.input.keyboard.on('keydown-W', () => { if (homeMenuActive) startGame(this); });
             this.input.keyboard.on('keydown-UP', () => { if (homeMenuActive) startGame(this); });
             this.input.keyboard.on('keydown-SPACE', () => { if (homeMenuActive) startGame(this); });
             
-            // opening Shop
             this.input.keyboard.on('keydown-N', () => { if(!homeMenuActive && !isUpgradeMenuOpen) toggleShop(this); });
             this.input.keyboard.on('keydown-B', () => { if(!homeMenuActive && !gameActive && !isShopOpen && !isUpgradeMenuOpen) togglePermanentShop(this); });
             this.input.keyboard.on('keydown-M', () => { if(tasksOverlay && !tasksOverlay.visible && !isShopOpen && !isPermanentShopOpen && !isUpgradeMenuOpen) openTasksPage(this); });
@@ -489,7 +482,6 @@
 
             loadPermanentProgress();
             
-            // יצירת הקבוצות לפני קריאה ל-setupLevel כדי למנוע את הקריסה
             fallingPlatforms = this.physics.add.group();
             hiddenWalls = this.physics.add.staticGroup();
             redBlocks = this.physics.add.staticGroup();
@@ -497,7 +489,7 @@
 
             setupLevel(this, 1);
             updatePermanentUI();
-            createShop(this); // create shop menu in the background
+            createShop(this); 
             createPermanentShop(this);
             createRunUpgradeMenu(this);
         }
@@ -875,7 +867,6 @@
             scene.time.delayedCall(100, () => setupLevel(scene, currentLevel + 1));
         }
 
-        // --- Permanent shop system (does not interfere) ---
         function createShop(scene) {
             shopContainer = scene.add.container(400, 300).setScrollFactor(0).setDepth(1000).setVisible(false);
             let bg = scene.add.rectangle(0, 0, 500, 450, 0x111111, 0.95).setStrokeStyle(5, 0xFFD700);
@@ -971,7 +962,7 @@
             if (isShopOpen) {
                 updateShopLabels();
                 gameActive = false;
-                scene.physics.world.pause(); // Pauses the game completely!
+                scene.physics.world.pause(); 
             } else {
                 scene.physics.world.resume();
                 if (health > 0 && !centerText.visible) gameActive = true;
@@ -982,18 +973,15 @@
             if (tasksOverlay && tasksOverlay.visible) return;
             let actualPrice = getInGamePrice(price);
             if (!isShopOpen || score < actualPrice) {
-                if (isShopOpen) SoundEngine.play('hit'); // not enough money
+                if (isShopOpen) SoundEngine.play('hit');
                 return;
             }
             score -= actualPrice;
             scoreText.setText('Score: ' + score);
             SoundEngine.play('coin');
-            explodeParticles(scene, 400, 300, 0xFFD700, 40); // purchase effect
+            explodeParticles(scene, 400, 300, 0xFFD700, 40);
 
-            if (id === 1) {
-                shootDelay = 150;
-                specialWeapon = 'ice';
-            }
+            if (id === 1) { shootDelay = 150; specialWeapon = 'ice'; }
             if (id === 2) { health += 5; healthText.setText('Health: ' + health); player.setTint(0xFFD700); }
             if (id === 3) { isInvincible = true; bubbleShield.setAlpha(1); scene.time.delayedCall(10000, () => { isInvincible = false; bubbleShield.setAlpha(0); }); }
             if (id === 4 && !hasDrone) { 
@@ -1001,24 +989,10 @@
                 attackDrone = scene.physics.add.sprite(player.x, player.y - 50, 'droneTex').setDepth(55);
                 attackDrone.body.allowGravity = false;
             }
-            if (id === 5) {
-                specialWeapon = 'fire';
-                shootDelay = 200;
-                if (player) player.setTint(0xFF4500);
-            }
-            if (id === 6) {
-                playerSkin = true;
-                if (player) player.setTint(0xAA00FF);
-            }
-            if (id === 7) {
-                specialWeapon = 'ultimateIce';
-                shootDelay = 100;
-                if (player) player.setTint(0x00FFFF);
-            }
-            if (id === 8) {
-                playerSkin = true;
-                if (player) player.setTint(0x00AAFF);
-            }
+            if (id === 5) { specialWeapon = 'fire'; shootDelay = 200; if (player) player.setTint(0xFF4500); }
+            if (id === 6) { playerSkin = true; if (player) player.setTint(0xAA00FF); }
+            if (id === 7) { specialWeapon = 'ultimateIce'; shootDelay = 100; if (player) player.setTint(0x00FFFF); }
+            if (id === 8) { playerSkin = true; if (player) player.setTint(0x00AAFF); }
         }
 
         function setupTwoPlayerLevel(scene, level) {
@@ -1297,6 +1271,20 @@
             activeColliders.push(scene.physics.add.collider(player, badSprings, (p, s) => { p.setVelocityY(gravityFlipped ? 500 : -500); takeDamage(scene); scene.tweens.add({targets: s, scaleY: 0.5, duration: 50, yoyo: true}); }));
             activeColliders.push(scene.physics.add.collider(player2, badSprings, (p, s) => { p.setVelocityY(gravityFlipped ? 500 : -500); takeDamage2Player(scene); scene.tweens.add({targets: s, scaleY: 0.5, duration: 50, yoyo: true}); }));
 
+            // תיקון: Friendly Fire! התנגשות של כדורים עם השחקנים!
+            activeColliders.push(scene.physics.add.overlap(iceballs, player, (p, ice) => {
+                if (isTwoPlayerMode && ice.getData('owner') === 'player2') {
+                    takeDamagePlayer1(scene);
+                    ice.destroy();
+                }
+            }));
+            activeColliders.push(scene.physics.add.overlap(iceballs, player2, (p2, ice) => {
+                if (isTwoPlayerMode && ice.getData('owner') === 'player1') {
+                    takeDamage2Player(scene);
+                    ice.destroy();
+                }
+            }));
+
             activeColliders.push(scene.physics.add.collider(iceballs, [ground, platforms], (i) => i.destroy()));
             activeColliders.push(scene.physics.add.collider(iceballs, enemies, (i, e) => {
                 i.destroy(); SoundEngine.play('hit');
@@ -1398,23 +1386,6 @@
             scene.physics.add.overlap(pet, coinsGroup, (p, c) => { c.destroy(); score += 10; scoreText.setText('Score: ' + score); SoundEngine.play('coin'); });
             activeColliders.push(scene.physics.add.collider(player, redBlocks));
             activeColliders.push(scene.physics.add.collider(player, blueBlocks));
-
-            scene.physics.add.collider(iceballs, enemies, (ice, e) => { ice.destroy(); e.destroy(); score+=30; scoreText.setText('Score: ' + score); combo++; comboTimer = 3000; comboText.setText('Combo: ' + combo); if (combo >=5 && !isRageMode) { isRageMode = true; rageTimer = 5000; currentSpeed += 100; } explodeParticles(scene, e.x, e.y, 0xFF00FF, 20); if (cursedChestActive) { cursedKills++; if (cursedKills >= cursedKillsNeeded) { cursedChestActive = false; health = 3; healthText.setText('Health: ' + health); } } });
-            scene.physics.add.collider(iceballs, bats, (ice, b) => { ice.destroy(); b.destroy(); score+=40; scoreText.setText('Score: ' + score); combo++; comboTimer = 3000; comboText.setText('Combo: ' + combo); if (combo >=5 && !isRageMode) { isRageMode = true; rageTimer = 5000; currentSpeed += 100; } explodeParticles(scene, b.x, b.y, 0xFF00FF, 20); if (cursedChestActive) { cursedKills++; if (cursedKills >= cursedKillsNeeded) { cursedChestActive = false; health = 3; healthText.setText('Health: ' + health); } } });
-            scene.physics.add.collider(iceballs, player, (ice, p) => {
-                if (isTwoPlayerMode && ice.getData('owner') === 'player2') {
-                    takeDamagePlayer1(scene);
-                    ice.destroy();
-                }
-            });
-            scene.physics.add.collider(iceballs, player2, (ice, p2) => {
-                if (isTwoPlayerMode && ice.getData('owner') === 'player1') {
-                    takeDamage2Player(scene);
-                    ice.destroy();
-                }
-            });
-            scene.physics.add.overlap(player, mysteryBlocks, (p, b) => { if (!b.getData('used')) { b.setData('used', true); b.setTint(0x888888); if (Phaser.Math.Between(0,10) < 3) { cursedChestActive = true; health = 1; healthText.setText('Health: ' + health); cursedKills = 0; } else { score += 100; scoreText.setText('Score: ' + score); SoundEngine.play('coin'); } } });
-    
         }
 
         function setupCollisions(scene) {
@@ -1585,11 +1556,17 @@ if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal,
                 explodeParticles(this, player.x, player.y+(gravityFlipped?-15:15), 0xFFA500, 2); 
             }
 
-            // ground pound
-            if (!isTouchingGround && (cursors.down.isDown || keys.S.isDown) && !isGroundPounding) {
-                isGroundPounding = true;
-                player.setVelocityY(1500);
-                explodeParticles(this, player.x, player.y, 0xFFFF00, 10);
+            // ground pound (Double Tap) - תיקון: יופעל רק בלחיצה כפולה
+            let p1DownJustPressed = Phaser.Input.Keyboard.JustDown(keys.S) || (!isTwoPlayerMode && Phaser.Input.Keyboard.JustDown(cursors.down));
+            if (p1DownJustPressed && !isTouchingGround && !isGroundPounding) {
+                if (time - lastDownPressTime < 400) {
+                    isGroundPounding = true;
+                    player.setVelocityY(1500);
+                    explodeParticles(this, player.x, player.y, 0xFFFF00, 10);
+                    lastDownPressTime = 0;
+                } else {
+                    lastDownPressTime = time;
+                }
             }
 
             if (Phaser.Input.Keyboard.JustDown(gravToggleKey) && score >= 50) { score -= 50; scoreText.setText('Score: ' + score); SoundEngine.play('coin'); flipGravity(this, 3000); }
@@ -1604,7 +1581,7 @@ if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal,
                 this.time.delayedCall(800, () => { if(gameActive) centerText.setVisible(false); });
             }
             
-            // ירייה עם מקש Q (או מקשים אחרים כפי שהיה מקודם)
+            // ירייה עם מקש Q לשחקן 1
             let p1Shoot = Phaser.Input.Keyboard.JustDown(keys.Q) || Phaser.Input.Keyboard.JustDown(shootKey) || (!isTwoPlayerMode && Phaser.Input.Keyboard.JustDown(cursors.down));
             if (p1Shoot && hasIcePower && time > lastShotTime + shootDelay) {
                 lastShotTime = time;
@@ -1630,16 +1607,14 @@ if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal,
             if (Phaser.Input.Keyboard.JustDown(dashKey) && canDash) { canDash = false; player.setVelocityX(player.flipX ? -dashSpeed : dashSpeed); SoundEngine.play('shoot'); isPerfectDodging = true; perfectDodgeTimer = 200; this.time.delayedCall(1000, () => canDash = true); }
             if (Phaser.Input.Keyboard.JustDown(coinRainKey) && !usedCoinRain) { usedCoinRain = true; SoundEngine.play('coin'); for(let i=0; i<20; i++) { let c = coinsGroup.create(player.x + Phaser.Math.Between(-200, 200), player.y - Phaser.Math.Between(300, 600), 'coinTex'); c.setBounce(0.5); c.setCollideWorldBounds(true); } }
 
-            // attack drone logic (new!)
+            // attack drone logic
             if (hasDrone && attackDrone && attackDrone.active) {
-                // makes the drone hover smoothly above the player
                 attackDrone.x += ((player.x + (player.flipX ? 40 : -40)) - attackDrone.x) * 0.1;
                 attackDrone.y += ((player.y - 60) - attackDrone.y) * 0.1;
 
-                // shoots the nearest enemy
                 if (time > lastDroneShot + 1000) {
                     let nearestEnemy = null;
-                    let closestDist = 400; // drone shooting range
+                    let closestDist = 400; 
                     enemies.getChildren().concat(bats.getChildren()).forEach(e => {
                         let dist = Phaser.Math.Distance.Between(attackDrone.x, attackDrone.y, e.x, e.y);
                         if (dist < closestDist) { closestDist = dist; nearestEnemy = e; }
@@ -1651,10 +1626,9 @@ if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal,
                         plasma.body.allowGravity = false;
                         this.physics.moveToObject(plasma, nearestEnemy, 600);
                         SoundEngine.play('shoot');
-                        // define that if the plasma hits an enemy it dies
                         this.physics.add.collider(plasma, enemies, (p, e) => { p.destroy(); e.destroy(); score+=30; scoreText.setText('Score: ' + score); explodeParticles(this, e.x, e.y, 0xFF00FF, 20); });
                         this.physics.add.collider(plasma, bats, (p, e) => { p.destroy(); e.destroy(); score+=40; scoreText.setText('Score: ' + score); explodeParticles(this, e.x, e.y, 0xFF00FF, 20); });
-                        this.time.delayedCall(1500, () => { if(plasma.active) plasma.destroy(); }); // remove plasma if it didn't hit
+                        this.time.delayedCall(1500, () => { if(plasma.active) plasma.destroy(); });
                     }
                 }
             }
@@ -1814,7 +1788,7 @@ if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal,
                 player.body.velocity.x += windDirection * 5;
             }
 
-            // bullet time - FIXED CAMERA TINT ISSUE
+            // bullet time
             if (shiftKey && shiftKey.isDown && stamina > 0) {
                 if (this.physics.world.timeScale !== 0.5) {
                     originalSpeed = currentSpeed; // שמירת המהירות הנוכחית לפני ההאטה
