@@ -47,29 +47,6 @@
     <video id="victory-video" preload="auto" muted playsinline style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); width:760px; max-width:90vw; z-index:1202; border:4px solid #00FF00; border-radius:12px; background:black;"></video>
     
     <script>
-        window.onerror = function(msg, url, line, column, error) {
-            let errDiv = document.getElementById('error-msg');
-            errDiv.style.display = 'block';
-            let text = "Error:<br>" + msg + "<br>Line: " + line + ", Column: " + column;
-            if (error && error.stack) {
-                text += "<br>Stack:<br>" + error.stack.replace(/\n/g, '<br>');
-            }
-            errDiv.innerHTML = text;
-            return false;
-        };
-
-        window.addEventListener('unhandledrejection', function(event) {
-            let errDiv = document.getElementById('error-msg');
-            errDiv.style.display = 'block';
-            let reason = event.reason;
-            let text = "Unhandled rejection:<br>" + (reason && reason.message ? reason.message : reason);
-            if (reason && reason.stack) {
-                text += "<br>Stack:<br>" + reason.stack.replace(/\n/g, '<br>');
-            }
-            errDiv.innerHTML = text;
-            event.preventDefault();
-        });
-
         const SoundEngine = {
             ctx: null,
             init() { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); if (this.ctx.state === 'suspended') this.ctx.resume(); },
@@ -142,7 +119,6 @@
         let cursedChestActive = false, cursedKillsNeeded = 10, cursedKills = 0;
         let perfectDodgeTimer = 0, isPerfectDodging = false;
         
-        // --- קבוצות הבעייתיות הוכרזו כאן מראש ---
         let fallingPlatforms, hiddenWalls, redBlocks, blueBlocks;
         let buildBlocks, powerUps2Player, lavaSpots;
         let player2, player2Health = 5, player2HealthText;
@@ -159,11 +135,9 @@
         let isGroundPounding = false;
         let isRedSolid = true;
         
-        // --- New shop variables and extras ---
         let isShopOpen = false, shopContainer;
-        let shootDelay = 500; // shooting delay (upgradeable)
-        let attackDrone = null, hasDrone = false, lastDroneShot = 0; // drone system
-        // --------------------------------
+        let shootDelay = 500;
+        let attackDrone = null, hasDrone = false, lastDroneShot = 0;
 
         let scoreText, healthText, bossHealthText, centerText, levelText, bombText, bossTalk;
         let superCharge = 0, superChargeMax = 3;
@@ -201,7 +175,6 @@
             g.fillStyle(0x800080, 0.9); g.fillCircle(16, 16, 14); g.fillStyle(0xFFFFFF); g.fillCircle(12, 14, 4); g.fillCircle(20, 14, 4); g.fillStyle(0x000000); g.fillCircle(12, 14, 2); g.fillCircle(20, 14, 2); g.generateTexture('enemyTex', 32, 32); g.clear();
             g.fillStyle(0x222222); g.fillRect(12, 12, 8, 8); g.fillStyle(0x444444); g.moveTo(12, 12); g.lineTo(0, 4); g.lineTo(12, 16); g.fill(); g.moveTo(20, 12); g.lineTo(32, 4); g.lineTo(20, 16); g.fill(); g.fillStyle(0xFF0000); g.fillRect(14, 14, 1, 1); g.fillRect(17, 14, 1, 1); g.generateTexture('batTex', 32, 32); g.clear();
             
-            // 🐉 original mechanical dragon - just like before!
             g.fillStyle(0xAAAAAA); g.fillTriangle(60, 40, 20, -20, 140, -10); g.fillTriangle(80, 40, 50, -30, 160, -5); g.fillStyle(0x777777); g.fillRect(40, 40, 60, 30); g.fillStyle(0x999999); g.fillRect(10, 20, 40, 25); g.fillStyle(0x444444); g.fillRect(0, 30, 25, 10); g.fillStyle(0xFF0000); g.fillRect(25, 25, 6, 6); g.fillStyle(0xAAAAAA); g.fillTriangle(100, 60, 160, 30, 160, 80); g.fillStyle(0xFFFFFF); g.fillTriangle(20, 20, 25, 5, 30, 20); g.fillTriangle(50, 40, 55, 25, 60, 40); g.fillTriangle(70, 40, 75, 25, 80, 40); g.fillTriangle(140, 55, 155, 45, 145, 65); g.generateTexture('realDragon', 170, 100); g.clear();
 
             g.fillStyle(0x8B4513); g.fillRect(0, 0, 400, 40); g.fillStyle(0x228B22); g.fillRect(0, 0, 400, 8); g.generateTexture('groundTex', 400, 40); g.clear();
@@ -241,11 +214,8 @@
             g.fillStyle(0x00FF00); g.fillCircle(4,4,4); g.generateTexture('poisonDropTex', 8, 8); g.clear();
             g.fillStyle(0xFF0000); g.fillRect(0, 0, 32, 16); g.generateTexture('badSpringTex', 32, 16); g.clear();
 
-            // new drone texture
             g.fillStyle(0x888888); g.fillCircle(10, 10, 10); g.fillStyle(0x00FFFF); g.fillCircle(10, 10, 4); g.generateTexture('droneTex', 20, 20); g.clear();
-            // drone attack shot texture
             g.fillStyle(0x00FFFF); g.fillCircle(4, 4, 4); g.generateTexture('plasmaTex', 8, 8); g.clear();
-            // wizard texture for darkness
             g.fillStyle(0x3B1F0B); g.fillRect(0, 0, 24, 4); g.fillStyle(0x8B4513); g.fillRect(0, 2, 24, 2); g.fillStyle(0xFFFF00); g.fillRect(22, 1, 4, 2); g.generateTexture('wandTex', 28, 6); g.clear();
             g.fillStyle(0x5A2F0A); g.fillRect(0, 0, 28, 40); g.fillStyle(0x43200E); g.fillRect(2, 4, 24, 28); g.fillStyle(0xFFFFFF); g.fillCircle(14, 10, 8); g.fillStyle(0x000000); g.fillCircle(11, 9, 2); g.fillCircle(17, 9, 2); g.fillStyle(0xFF6666); g.fillRect(10, 15, 8, 4); g.fillStyle(0x8B0000); g.fillTriangle(4, 32, 14, 44, 24, 32); g.generateTexture('wizardTex', 28, 48); g.clear();
         }
@@ -405,13 +375,7 @@
             helpOverlay = scene.add.container(400, 300).setScrollFactor(0).setDepth(310).setVisible(false);
             let overlayBg = scene.add.rectangle(0, 0, 520, 420, 0x000000, 0.95).setStrokeStyle(4, 0x00FFAA);
             let overlayTitle = scene.add.text(0, -150, 'How to Play', { fontSize: '32px', fill: '#00FFAA', fontStyle: 'bold' }).setOrigin(0.5);
-            let overlayBody = scene.add.text(0, -40, `W / ↑ / SPACE - Jump
-X - Shoot
-S - Super shot (after 3 kills)
-Z - Dash
-N - Open shop
-B - Open permanent shop
-R - Restart`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { width: 460 } }).setOrigin(0.5);
+            let overlayBody = scene.add.text(0, -40, `W / ↑ / SPACE - Jump\nX - Shoot\nS - Super shot (after 3 kills)\nZ - Dash\nN - Open shop\nB - Open permanent shop\nR - Restart\nSHIFT - Bullet Time`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { width: 460 } }).setOrigin(0.5);
             let closeHelp = scene.add.text(0, 150, 'Close', { fontSize: '24px', fill: '#FF6666', fontStyle: 'bold' }).setOrigin(0.5).setInteractive({ useHandCursor: true });
             closeHelp.on('pointerdown', () => toggleHelpOverlay(false));
             helpOverlay.add([overlayBg, overlayTitle, overlayBody, closeHelp]);
@@ -519,7 +483,6 @@ R - Restart`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { 
 
             loadPermanentProgress();
             
-            // יצירת הקבוצות לפני קריאה ל-setupLevel כדי למנוע את הקריסה
             fallingPlatforms = this.physics.add.group();
             hiddenWalls = this.physics.add.staticGroup();
             redBlocks = this.physics.add.staticGroup();
@@ -527,7 +490,7 @@ R - Restart`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { 
 
             setupLevel(this, 1);
             updatePermanentUI();
-            createShop(this); // create shop menu in the background
+            createShop(this); 
             createPermanentShop(this);
             createRunUpgradeMenu(this);
         }
@@ -1050,7 +1013,6 @@ R - Restart`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { 
                 if (player) player.setTint(0x00AAFF);
             }
         }
-        // ---------------------------------------------
 
         function setupTwoPlayerLevel(scene, level) {
             levelTransitioning = false;
@@ -1559,9 +1521,12 @@ if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal,
             }
 
             scene.physics.add.overlap(player, coinsGroup, (p, c) => { let val = c.getData('diamond') ? 100 : 10; c.destroy(); score += val; scoreText.setText('Score: ' + score); SoundEngine.play('coin'); taskState.coinsRun += 1; if (taskState.coinsRun >= 40) taskState.completed[1] = true; updateTaskOverlay(); });
+            scene.physics.add.overlap(pet, coinsGroup, (p, c) => { c.destroy(); score += 10; scoreText.setText('Score: ' + score); SoundEngine.play('coin'); });
+            activeColliders.push(scene.physics.add.collider(player, redBlocks));
+            activeColliders.push(scene.physics.add.collider(player, blueBlocks));
         }
 
-        function update(time) {
+        function update(time, delta) {
             if (!gameActive && !isShopOpen) return; // do not run while shop is open
 
             if(deathGhost && deathGhost.active) { this.physics.moveToObject(deathGhost, player, 60); }
@@ -1848,17 +1813,20 @@ if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal,
                 player.body.velocity.x += windDirection * 5;
             }
 
-            // bullet time
+            // bullet time - FIXED CAMERA TINT ISSUE
             if (shiftKey && shiftKey.isDown && stamina > 0) {
-                this.physics.world.timeScale = 0.5;
-                this.cameras.main.setTint(0x87CEEB);
-                currentSpeed = 500;
+                if (this.physics.world.timeScale !== 0.5) {
+                    originalSpeed = currentSpeed; // שמירת המהירות הנוכחית לפני ההאטה
+                    this.physics.world.timeScale = 0.5;
+                    currentSpeed = originalSpeed * 2; // פיצוי על ההאטה כדי שהשחקן יזוז רגיל
+                }
                 stamina -= 0.5;
                 staminaText.setText('Stamina: ' + Math.floor(stamina));
             } else if (shiftKey) {
-                this.physics.world.timeScale = 1;
-                this.cameras.main.clearTint();
-                currentSpeed = originalSpeed;
+                if (this.physics.world.timeScale === 0.5) {
+                    this.physics.world.timeScale = 1;
+                    currentSpeed = originalSpeed; // החזרת המהירות המקורית
+                }
                 if (stamina < maxStamina) stamina += 0.2;
                 staminaText.setText('Stamina: ' + Math.floor(stamina));
             }
