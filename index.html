@@ -375,7 +375,7 @@
             helpOverlay = scene.add.container(400, 300).setScrollFactor(0).setDepth(310).setVisible(false);
             let overlayBg = scene.add.rectangle(0, 0, 520, 420, 0x000000, 0.95).setStrokeStyle(4, 0x00FFAA);
             let overlayTitle = scene.add.text(0, -150, 'How to Play', { fontSize: '32px', fill: '#00FFAA', fontStyle: 'bold' }).setOrigin(0.5);
-            let overlayBody = scene.add.text(0, -40, `W / ↑ / SPACE - Jump\nX - Shoot\nS - Super shot (after 3 kills)\nZ - Dash\nN - Open shop\nB - Open permanent shop\nR - Restart\nSHIFT - Bullet Time`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { width: 460 } }).setOrigin(0.5);
+            let overlayBody = scene.add.text(0, -40, `W / ↑ / SPACE - Jump\nQ / X - Shoot\nS - Super shot (after 3 kills)\nZ - Dash\nN - Open shop\nB - Open permanent shop\nR - Restart\nSHIFT - Bullet Time`, { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { width: 460 } }).setOrigin(0.5);
             let closeHelp = scene.add.text(0, 150, 'Close', { fontSize: '24px', fill: '#FF6666', fontStyle: 'bold' }).setOrigin(0.5).setInteractive({ useHandCursor: true });
             closeHelp.on('pointerdown', () => toggleHelpOverlay(false));
             helpOverlay.add([overlayBg, overlayTitle, overlayBody, closeHelp]);
@@ -451,7 +451,9 @@
             comboText = this.add.text(16, 168, 'Combo: 0', { fontSize: '18px', fill: '#FFFF00', stroke: '#000', strokeThickness: 2 }).setScrollFactor(0).setDepth(200);
             staminaText = this.add.text(16, 196, 'Stamina: 100', { fontSize: '18px', fill: '#00FFFF', stroke: '#000', strokeThickness: 2 }).setScrollFactor(0).setDepth(200);
 
-            cursors = this.input.keyboard.createCursorKeys(); keys = this.input.keyboard.addKeys('W,A,D,S,S,SPACE');
+            cursors = this.input.keyboard.createCursorKeys(); 
+            // הוספת ה-Q וה-E
+            keys = this.input.keyboard.addKeys('W,A,D,S,Q,E,SPACE');
             restartKey = this.input.keyboard.addKey('R'); shootKey = this.input.keyboard.addKey('X'); dashKey = this.input.keyboard.addKey('Z'); coinRainKey = this.input.keyboard.addKey('C'); 
             shrinkKey = this.input.keyboard.addKey('S'); meteorKey = this.input.keyboard.addKey('M'); 
             gravToggleKey = this.input.keyboard.addKey('G'); superJumpKey = this.input.keyboard.addKey('U'); 
@@ -463,13 +465,17 @@
             key2Right = cursors.right;
             key2Jump = cursors.up;
             key2Shoot = cursors.down;
-            buildKey1 = this.input.keyboard.addKey('Q');
+            
+            // שינוי ה-E לבנייה כדי שלא יתנגש עם ה-Q של הירייה
+            buildKey1 = this.input.keyboard.addKey('E');
             buildKey2 = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.PLUS);
 
             createHomeMenu(this);
-            this.input.keyboard.on('keydown-W', () => startGame(this));
-            this.input.keyboard.on('keydown-UP', () => startGame(this));
-            this.input.keyboard.on('keydown-SPACE', () => startGame(this));
+            
+            // התיקון הקריטי: מתחיל משחק *רק* אם אנחנו בתפריט הראשי!
+            this.input.keyboard.on('keydown-W', () => { if (homeMenuActive) startGame(this); });
+            this.input.keyboard.on('keydown-UP', () => { if (homeMenuActive) startGame(this); });
+            this.input.keyboard.on('keydown-SPACE', () => { if (homeMenuActive) startGame(this); });
             
             // opening Shop
             this.input.keyboard.on('keydown-N', () => { if(!homeMenuActive && !isUpgradeMenuOpen) toggleShop(this); });
@@ -483,6 +489,7 @@
 
             loadPermanentProgress();
             
+            // יצירת הקבוצות לפני קריאה ל-setupLevel כדי למנוע את הקריסה
             fallingPlatforms = this.physics.add.group();
             hiddenWalls = this.physics.add.staticGroup();
             redBlocks = this.physics.add.staticGroup();
@@ -490,7 +497,7 @@
 
             setupLevel(this, 1);
             updatePermanentUI();
-            createShop(this); 
+            createShop(this); // create shop menu in the background
             createPermanentShop(this);
             createRunUpgradeMenu(this);
         }
@@ -1057,7 +1064,6 @@
                 stage1BackgroundImage = scene.add.image(400, 300, 'stage1BackgroundImg').setOrigin(0.5).setScrollFactor(0).setDepth(-1).setDisplaySize(800, 600);
             }
 
-            // Create smaller ground with a lava hole in the middle
             let leftGround = ground.create(150, 580, 'groundTex').setDisplaySize(300, 40);
             let rightGround = ground.create(650, 580, 'groundTex').setDisplaySize(300, 40);
             leftGround.body.checkCollision.down = false;
@@ -1066,7 +1072,6 @@
 
             [300, 500].forEach((x, i) => { let p = platforms.create(x, 430, 'platTex'); p.body.checkCollision.down = false; });
 
-            // Add a few power-ups
             for (let i = 0; i < 2; i++) {
                 let x = Phaser.Math.Between(200, 600);
                 let y = Phaser.Math.Between(220, 360);
@@ -1074,7 +1079,6 @@
                 powerUp.setData('type', ['health', 'speed', 'invincible'][Phaser.Math.Between(0, 2)]);
             }
 
-            // Create player 1 on left
             if (!player) {
                 player = scene.physics.add.sprite(150, 450, 'playerImg').setBounce(0.1).setCollideWorldBounds(true).setDepth(50).setDisplaySize(40, 60).setTint(0x0000FF);
                 bubbleShield = scene.add.image(0, 0, 'bubbleTex').setAlpha(0).setDepth(51);
@@ -1089,7 +1093,6 @@
                 if (playerMouth) { playerMouth.setPosition(player.x + 10, player.y + 8); }
             }
 
-            // Create player 2 on right
             if (!player2) {
                 player2 = scene.physics.add.sprite(650, 450, 'playerImg').setBounce(0.1).setCollideWorldBounds(true).setDepth(50).setDisplaySize(40, 60).setTint(0x00FF00);
                 player2Wing = scene.add.image(player2.x - 12, player2.y - 10, 'dragonWingTex').setOrigin(0.5).setDepth(49);
@@ -1521,9 +1524,6 @@ if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal,
             }
 
             scene.physics.add.overlap(player, coinsGroup, (p, c) => { let val = c.getData('diamond') ? 100 : 10; c.destroy(); score += val; scoreText.setText('Score: ' + score); SoundEngine.play('coin'); taskState.coinsRun += 1; if (taskState.coinsRun >= 40) taskState.completed[1] = true; updateTaskOverlay(); });
-            scene.physics.add.overlap(pet, coinsGroup, (p, c) => { c.destroy(); score += 10; scoreText.setText('Score: ' + score); SoundEngine.play('coin'); });
-            activeColliders.push(scene.physics.add.collider(player, redBlocks));
-            activeColliders.push(scene.physics.add.collider(player, blueBlocks));
         }
 
         function update(time, delta) {
@@ -1604,8 +1604,9 @@ if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal,
                 this.time.delayedCall(800, () => { if(gameActive) centerText.setVisible(false); });
             }
             
-            // shooting with new shootDelay variable (upgrades via shop)
-            if (Phaser.Input.Keyboard.JustDown(isTwoPlayerMode ? keys.S : cursors.down) && hasIcePower && time > lastShotTime + shootDelay) {
+            // ירייה עם מקש Q (או מקשים אחרים כפי שהיה מקודם)
+            let p1Shoot = Phaser.Input.Keyboard.JustDown(keys.Q) || Phaser.Input.Keyboard.JustDown(shootKey) || (!isTwoPlayerMode && Phaser.Input.Keyboard.JustDown(cursors.down));
+            if (p1Shoot && hasIcePower && time > lastShotTime + shootDelay) {
                 lastShotTime = time;
                 SoundEngine.play('shoot');
                 if (specialWeapon === 'ultimateIce') {
@@ -1744,7 +1745,7 @@ if(currentLevel === 2 && fakeGoal) { scene.physics.add.overlap(player, fakeGoal,
                 if (player2.y > 600 || player2.y < -100) { takeDamage2Player(this); player2.x = 650; player2.y = 450; player2.setVelocity(0); }
             }
 
-            // Player 1 build blocks
+            // Player 1 build blocks (עכשיו על מקש E)
             if (Phaser.Input.Keyboard.JustDown(buildKey1) && isTwoPlayerMode) {
                 let block = buildBlocks.create(player.x + (player.flipX ? -50 : 50), player.y - 50, 'blockTex');
                 block.setDisplaySize(50, 20);
