@@ -91,6 +91,7 @@
         let lastShotTime = 0, canDoubleJump = false, canDoubleJump2 = false, canDash = true, usedCoinRain = false;
         let reverseControls = false, isTiny = false, bombActive = false, bombTimer = 0;
         let levelTransitionContainer, levelTransitionMarker, levelCompleteContainer;
+        let birdGroup, birdFireGroup, nextBirdSpawnTime = 0;
         let trollEventsStarted = false, superJumpActive = false, canJumpTroll = true, gravityFlipped = false;
         let trollEventHandles = [];
         let dashSpeed = 1000;
@@ -217,6 +218,8 @@
             g.fillStyle(0x00FFFF); g.fillCircle(4, 4, 4); g.generateTexture('plasmaTex', 8, 8); g.clear();
             g.fillStyle(0x3B1F0B); g.fillRect(0, 0, 24, 4); g.fillStyle(0x8B4513); g.fillRect(0, 2, 24, 2); g.fillStyle(0xFFFF00); g.fillRect(22, 1, 4, 2); g.generateTexture('wandTex', 28, 6); g.clear();
             g.fillStyle(0x5A2F0A); g.fillRect(0, 0, 28, 40); g.fillStyle(0x43200E); g.fillRect(2, 4, 24, 28); g.fillStyle(0xFFFFFF); g.fillCircle(14, 10, 8); g.fillStyle(0x000000); g.fillCircle(11, 9, 2); g.fillCircle(17, 9, 2); g.fillStyle(0xFF6666); g.fillRect(10, 15, 8, 4); g.fillStyle(0x8B0000); g.fillTriangle(4, 32, 14, 44, 24, 32); g.generateTexture('wizardTex', 28, 48); g.clear();
+            g.fillStyle(0x222222); g.fillTriangle(0, 10, 24, 0, 32, 10); g.fillStyle(0xAAAAAA); g.fillRect(8, 10, 16, 4); g.fillStyle(0xFFEE00); g.fillCircle(8, 20, 4); g.fillCircle(24, 20, 4); g.generateTexture('birdTex', 32, 24); g.clear();
+            g.fillStyle(0xFF8800); g.fillCircle(8, 8, 8); g.fillStyle(0xFFFFFF, 0.6); g.fillCircle(8, 8, 4); g.generateTexture('skyFireTex', 16, 16); g.clear();
             g.fillStyle(0x081A2C); g.fillRoundedRect(0, 0, 720, 720, 30);
             g.fillStyle(0x14375C); g.fillRoundedRect(20, 20, 680, 680, 24);
             g.fillStyle(0x1A5A8A); g.fillRect(120, 120, 480, 480);
@@ -232,6 +235,45 @@
             g.fillCircle(360, -280, 14);
             g.generateTexture('transitionMapTex', 720, 720);
             g.clear();
+        }
+
+        function findNearestHomingTarget(scene, projectile) {
+            let target = null;
+            let distance = Number.MAX_SAFE_INTEGER;
+            enemies.getChildren().concat(bats.getChildren()).forEach(e => {
+                if (!e.active) return;
+                let d = Phaser.Math.Distance.Between(projectile.x, projectile.y, e.x, e.y);
+                if (d < distance) { distance = d; target = e; }
+            });
+            return target;
+        }
+
+        function spawnSkyBird(scene) {
+            if (!birdGroup) return;
+            let bird = birdGroup.create(850, Phaser.Math.Between(80, 180), 'birdTex').setVelocityX(-120).setDepth(90).setAlpha(0.95);
+            bird.body.allowGravity = false;
+            bird.setData('nextFire', scene.time.now + Phaser.Math.Between(1200, 2400));
+        }
+
+        function updateSkyBirds(scene, time) {
+            if (birdGroup) {
+                birdGroup.getChildren().forEach(bird => {
+                    if (!bird.active) return;
+                    if (bird.x < -50) { bird.destroy(); return; }
+                    if (time > bird.getData('nextFire')) {
+                        bird.setData('nextFire', time + Phaser.Math.Between(1200, 2400));
+                        let shot = birdFireGroup.create(bird.x - 16, bird.y + 8, 'skyFireTex').setDepth(90).setTint(0xFF6600);
+                        shot.body.allowGravity = false;
+                        shot.setVelocity(Phaser.Math.Between(-20, 20), 260);
+                    }
+                });
+            }
+            if (birdFireGroup) {
+                birdFireGroup.getChildren().forEach(fire => {
+                    if (!fire.active) return;
+                    if (fire.y > 620 || fire.x < -50 || fire.x > 850) fire.destroy();
+                });
+            }
         }
 
         function explodeParticles(scene, x, y, color, qty = 15) { let emitter = scene.add.particles(x, y, 'particleTex', { speed: { min: -150, max: 150 }, angle: { min: 0, max: 360 }, scale: { start: 1, end: 0 }, tint: color, lifespan: 600, gravityY: 300, quantity: qty, emitting: false }); emitter.explode(); }
@@ -252,11 +294,12 @@
             levelCompleteContainer = scene.add.container(400, 300).setScrollFactor(0).setDepth(1300).setVisible(false);
             let bg = scene.add.rectangle(0, 0, 760, 460, 0x050505, 0.92).setStrokeStyle(6, 0xFFD700);
             let glow = scene.add.ellipse(0, -40, 580, 260, 0xFFD700, 0.12);
-            let title = scene.add.text(0, -140, 'LEVEL COMPLETED!', { fontSize: '44px', fill: '#FFFF66', fontStyle: 'bold', stroke: '#000', strokeThickness: 6 }).setOrigin(0.5);
-            let subtitle = scene.add.text(0, -70, 'Great job! Preparing the next stage...', { fontSize: '24px', fill: '#FFFFFF', align: 'center', wordWrap: { width: 640 } }).setOrigin(0.5);
-            let badge = scene.add.circle(0, 80, 70, 0xFFD700).setStrokeStyle(4, 0xFFFFFF);
-            let badgeText = scene.add.text(0, 75, 'NEXT', { fontSize: '24px', fill: '#000', fontStyle: 'bold' }).setOrigin(0.5);
-            levelCompleteContainer.add([bg, glow, title, subtitle, badge, badgeText]);
+            let title = scene.add.text(0, -160, 'LEVEL COMPLETED!', { fontSize: '44px', fill: '#FFFF66', fontStyle: 'bold', stroke: '#000', strokeThickness: 6 }).setOrigin(0.5);
+            let subtitle = scene.add.text(0, -80, 'Great job! Pick your reward and move on.', { fontSize: '22px', fill: '#FFFFFF', align: 'center', wordWrap: { width: 640 } }).setOrigin(0.5);
+            let completeImage = scene.add.image(0, 80, 'chatGPTImageTex').setDisplaySize(260, 180).setOrigin(0.5).setAlpha(0.95);
+            let badge = scene.add.circle(0, 190, 60, 0xFFD700).setStrokeStyle(4, 0xFFFFFF);
+            let badgeText = scene.add.text(0, 190, 'NEXT', { fontSize: '24px', fill: '#000', fontStyle: 'bold' }).setOrigin(0.5);
+            levelCompleteContainer.add([bg, glow, title, subtitle, completeImage, badge, badgeText]);
         }
 
         function showLevelCompleteOverlay(scene) {
@@ -276,6 +319,7 @@
             if (levelTransitionContainer) return;
             levelTransitionContainer = scene.add.container(400, 300).setScrollFactor(0).setDepth(1000).setVisible(false);
             let bg = scene.add.rectangle(0, 0, 780, 780, 0x07101F, 0.92).setStrokeStyle(6, 0x00CCFF);
+            let bgImage = scene.add.image(0, 0, 'stage1BackgroundImg').setDisplaySize(620, 420).setOrigin(0.5).setAlpha(0.18);
             let map = scene.add.image(0, 0, 'transitionMapTex').setDisplaySize(720, 720).setOrigin(0.5);
             let title = scene.add.text(0, -340, 'Stage Path', { fontSize: '34px', fill: '#00CCFF', fontStyle: 'bold' }).setOrigin(0.5);
             let subtitle = scene.add.text(0, 320, '', { fontSize: '20px', fill: '#FFFFFF' }).setOrigin(0.5);
@@ -290,7 +334,8 @@
                 return scene.add.text(pos.x, pos.y, String(index + 1), { fontSize: '28px', fill: '#FFFFFF', fontStyle: 'bold' }).setOrigin(0.5).setDepth(1002);
             });
             levelTransitionMarker = scene.add.image(0, 280, 'playerTex').setDisplaySize(52, 52).setDepth(1003).setTint(0x00FF00);
-            levelTransitionContainer.add([bg, map, title, ...stageLabels, levelTransitionMarker, subtitle]);
+            let heroImage = scene.add.image(0, -260, 'chatGPTImageTex').setDisplaySize(140, 100).setOrigin(0.5).setAlpha(0.9);
+            levelTransitionContainer.add([bg, bgImage, map, title, heroImage, ...stageLabels, levelTransitionMarker, subtitle]);
             levelTransitionContainer.subtitle = subtitle;
         }
 
@@ -941,6 +986,238 @@
                         if (player) player.setTint(0xFF4500);
                         centerText.setText('Selected: Fireburst').setVisible(true);
                     }
+                },
+                {
+                    title: 'Homing Fire',
+                    desc: 'Your shots now track the nearest enemy',
+                    apply: () => {
+                        if (tempUpgradeBackup.specialWeapon === null) tempUpgradeBackup.specialWeapon = specialWeapon;
+                        if (tempUpgradeBackup.shootDelay === null) tempUpgradeBackup.shootDelay = shootDelay;
+                        specialWeapon = 'homingFire';
+                        shootDelay = 180;
+                        if (player) player.setTint(0xFF5500);
+                        centerText.setText('Selected: Homing Fire').setVisible(true);
+                    }
+                },
+                {
+                    title: 'Homing Ice',
+                    desc: 'Ice bolts chase the nearest enemy',
+                    apply: () => {
+                        if (tempUpgradeBackup.specialWeapon === null) tempUpgradeBackup.specialWeapon = specialWeapon;
+                        if (tempUpgradeBackup.shootDelay === null) tempUpgradeBackup.shootDelay = shootDelay;
+                        specialWeapon = 'homingIce';
+                        shootDelay = 180;
+                        if (player) player.setTint(0x00FFFF);
+                        centerText.setText('Selected: Homing Ice').setVisible(true);
+                    }
+                },
+                {
+                    title: 'Rapid Reload II',
+                    desc: 'Cut shoot cooldown even more for next level',
+                    apply: () => {
+                        if (tempUpgradeBackup.shootDelay === null) tempUpgradeBackup.shootDelay = shootDelay;
+                        shootDelay = Math.max(80, shootDelay - 100);
+                        centerText.setText('Selected: Rapid Reload II').setVisible(true);
+                    }
+                },
+                {
+                    title: 'Soul Armor',
+                    desc: 'Gain a protective shield for the upcoming level',
+                    apply: (scene) => {
+                        if (tempUpgradeBackup.isInvincible === null) tempUpgradeBackup.isInvincible = isInvincible;
+                        isInvincible = true;
+                        if (bubbleShield) bubbleShield.setAlpha(1);
+                        if (player) player.setTint(0x88FFAA);
+                        centerText.setText('Selected: Soul Armor').setVisible(true);
+                    }
+                },
+                {
+                    title: 'Frozen Core',
+                    desc: 'Ice storm power with faster shot speed',
+                    apply: () => {
+                        if (tempUpgradeBackup.specialWeapon === null) tempUpgradeBackup.specialWeapon = specialWeapon;
+                        if (tempUpgradeBackup.shootDelay === null) tempUpgradeBackup.shootDelay = shootDelay;
+                        specialWeapon = 'ice';
+                        shootDelay = 170;
+                        if (player) player.setTint(0x88EEFF);
+                        centerText.setText('Selected: Frozen Core').setVisible(true);
+                    }
+                },
+                {
+                    title: 'Inferno Strike',
+                    desc: 'Fire bolt damage is empowered for next level',
+                    apply: () => {
+                        if (tempUpgradeBackup.specialWeapon === null) tempUpgradeBackup.specialWeapon = specialWeapon;
+                        if (tempUpgradeBackup.shootDelay === null) tempUpgradeBackup.shootDelay = shootDelay;
+                        specialWeapon = 'fire';
+                        shootDelay = 170;
+                        if (player) player.setTint(0xFF8800);
+                        centerText.setText('Selected: Inferno Strike').setVisible(true);
+                    }
+                },
+                {
+                    title: 'Bird Call',
+                    desc: 'Summon an extra sky bird to roam the level',
+                    apply: (scene) => {
+                        spawnSkyBird(scene);
+                        centerText.setText('Selected: Bird Call').setVisible(true);
+                    }
+                },
+                {
+                    title: 'Power Surge',
+                    desc: 'Boost movement speed for next level',
+                    apply: () => {
+                        if (tempUpgradeBackup.currentSpeed === null) tempUpgradeBackup.currentSpeed = currentSpeed;
+                        currentSpeed = 360;
+                        centerText.setText('Selected: Power Surge').setVisible(true);
+                    }
+                },
+                {
+                    title: 'Flash Dash',
+                    desc: 'Your dash becomes lightning-fast next level',
+                    apply: () => {
+                        if (tempUpgradeBackup.dashSpeed === null) tempUpgradeBackup.dashSpeed = dashSpeed;
+                        dashSpeed = 2000;
+                        centerText.setText('Selected: Flash Dash').setVisible(true);
+                    }
+                },
+                {
+                    title: 'Healing Rain',
+                    desc: 'Restore two health points instantly',
+                    apply: () => {
+                        health = Math.min(5, health + 2);
+                        if (healthText) healthText.setText('Health: ' + health);
+                        centerText.setText('Selected: Healing Rain').setVisible(true);
+                    }
+                },
+                {
+                    title: 'Golden Heart',
+                    desc: 'Max health restored and feels golden',
+                    apply: () => {
+                        health = 5;
+                        if (healthText) healthText.setText('Health: ' + health);
+                        if (player) player.setTint(0xFFFF88);
+                        centerText.setText('Selected: Golden Heart').setVisible(true);
+                    }
+                },
+                {
+                    title: 'Crystal Boots',
+                    desc: 'Movement speed increases for the next level',
+                    apply: () => {
+                        if (tempUpgradeBackup.currentSpeed === null) tempUpgradeBackup.currentSpeed = currentSpeed;
+                        currentSpeed = 380;
+                        centerText.setText('Selected: Crystal Boots').setVisible(true);
+                    }
+                },
+                {
+                    title: 'Mirage Cloak',
+                    desc: 'Temporary invincibility with magical tint',
+                    apply: (scene) => {
+                        if (tempUpgradeBackup.isInvincible === null) tempUpgradeBackup.isInvincible = isInvincible;
+                        isInvincible = true;
+                        if (bubbleShield) bubbleShield.setAlpha(1);
+                        if (player) player.setTint(0xAA88FF);
+                        centerText.setText('Selected: Mirage Cloak').setVisible(true);
+                    }
+                },
+                {
+                    title: 'Thunder Burst',
+                    desc: 'Release three electric bolts immediately',
+                    apply: () => {
+                        for (let i = -1; i <= 1; i++) {
+                            let bolt = fireballs.create(player.x, player.y, 'plasmaTex');
+                            bolt.body.allowGravity = false;
+                            bolt.setVelocity(player.flipX ? -400 : 400, i * -120);
+                        }
+                        centerText.setText('Selected: Thunder Burst').setVisible(true);
+                    }
+                },
+                {
+                    title: 'Frost Nova',
+                    desc: 'Shoot several ice shards in a spread',
+                    apply: () => {
+                        for (let i = -2; i <= 2; i++) {
+                            let shard = iceballs.create(player.x, player.y, 'iceTex');
+                            shard.body.allowGravity = false;
+                            shard.setVelocity(player.flipX ? -450 : 450, i * -80);
+                        }
+                        centerText.setText('Selected: Frost Nova').setVisible(true);
+                    }
+                },
+                {
+                    title: 'Dragon Breath',
+                    desc: 'Shoot a wave of fire in front of you',
+                    apply: () => {
+                        for (let i = -1; i <= 1; i++) {
+                            let flame = fireballs.create(player.x, player.y, 'blueFireTex').setTint(0xFF5500);
+                            flame.body.allowGravity = false;
+                            flame.setVelocity(player.flipX ? -450 : 450, i * -80);
+                        }
+                        centerText.setText('Selected: Dragon Breath').setVisible(true);
+                    }
+                },
+                {
+                    title: 'Gravity Well',
+                    desc: 'Reduce gravity slightly for better jumps',
+                    apply: (scene) => {
+                        if (tempUpgradeBackup.gravityY === null) tempUpgradeBackup.gravityY = scene.physics.world.gravity.y;
+                        scene.physics.world.gravity.y = 550;
+                        centerText.setText('Selected: Gravity Well').setVisible(true);
+                    }
+                },
+                {
+                    title: 'Storm Call',
+                    desc: 'Summon three meteor bolts around you',
+                    apply: () => {
+                        for (let i = -1; i <= 1; i++) {
+                            let meteor = fireballs.create(player.x + i * 20, player.y - 40, 'powerTex').setTint(0xFF8800);
+                            meteor.body.allowGravity = false;
+                            meteor.setVelocity(i * 120, -280);
+                        }
+                        centerText.setText('Selected: Storm Call').setVisible(true);
+                    }
+                },
+                {
+                    title: 'Dodge Boost',
+                    desc: 'Fast speed boost for the next level',
+                    apply: () => {
+                        if (tempUpgradeBackup.currentSpeed === null) tempUpgradeBackup.currentSpeed = currentSpeed;
+                        currentSpeed = 420;
+                        centerText.setText('Selected: Dodge Boost').setVisible(true);
+                    }
+                },
+                {
+                    title: 'Phoenix Rise',
+                    desc: 'Full health and a protective spark',
+                    apply: () => {
+                        health = 5;
+                        if (healthText) healthText.setText('Health: ' + health);
+                        if (tempUpgradeBackup.isInvincible === null) tempUpgradeBackup.isInvincible = isInvincible;
+                        isInvincible = true;
+                        if (bubbleShield) bubbleShield.setAlpha(1);
+                        centerText.setText('Selected: Phoenix Rise').setVisible(true);
+                    }
+                },
+                {
+                    title: 'Thunder Wing',
+                    desc: 'Quick dash and electric trail for the next level',
+                    apply: () => {
+                        if (tempUpgradeBackup.dashSpeed === null) tempUpgradeBackup.dashSpeed = dashSpeed;
+                        dashSpeed = 2200;
+                        if (player) player.setTint(0xAADDFF);
+                        centerText.setText('Selected: Thunder Wing').setVisible(true);
+                    }
+                },
+                {
+                    title: 'Arcane Shell',
+                    desc: 'A magical armor boosts defense and power',
+                    apply: () => {
+                        if (tempUpgradeBackup.isInvincible === null) tempUpgradeBackup.isInvincible = isInvincible;
+                        isInvincible = true;
+                        if (bubbleShield) bubbleShield.setAlpha(1);
+                        if (player) player.setTint(0xAAFFAA);
+                        centerText.setText('Selected: Arcane Shell').setVisible(true);
+                    }
                 }
             ];
 
@@ -1137,6 +1414,7 @@
             ground = scene.physics.add.staticGroup(); platforms = scene.physics.add.staticGroup(); iceGround = scene.physics.add.staticGroup(); mysteryBlocks = scene.physics.add.staticGroup();
             goals = scene.physics.add.staticGroup(); springs = scene.physics.add.staticGroup(); healSprings = scene.physics.add.staticGroup(); lasers = scene.physics.add.staticGroup(); lava = scene.physics.add.staticGroup();
             enemies = scene.physics.add.group(); bats = scene.physics.add.group({allowGravity: false}); fireballs = scene.physics.add.group({allowGravity: false}); missiles = scene.physics.add.group({allowGravity: false}); fallingSpikes = scene.physics.add.group(); iceballs = scene.physics.add.group({allowGravity: false}); coinsGroup = scene.physics.add.group(); dragonCoinsGroup = scene.physics.add.group();
+            birdGroup = scene.physics.add.group({allowGravity: false}); birdFireGroup = scene.physics.add.group({allowGravity: false}); nextBirdSpawnTime = 0;
             powerUps = scene.physics.add.group(); defuseOrbs = scene.physics.add.staticGroup();
             portals = scene.physics.add.staticGroup(); fakeCoins = scene.physics.add.staticGroup(); homingFireballs = scene.physics.add.group({allowGravity: false});
             poisonDrops = scene.physics.add.group(); badSprings = scene.physics.add.staticGroup();
@@ -1229,6 +1507,7 @@
             ground = scene.physics.add.staticGroup(); platforms = scene.physics.add.staticGroup(); iceGround = scene.physics.add.staticGroup(); mysteryBlocks = scene.physics.add.staticGroup();
             goals = scene.physics.add.staticGroup(); springs = scene.physics.add.staticGroup(); healSprings = scene.physics.add.staticGroup(); lasers = scene.physics.add.staticGroup(); lava = scene.physics.add.staticGroup();
             enemies = scene.physics.add.group(); bats = scene.physics.add.group({allowGravity: false}); fireballs = scene.physics.add.group({allowGravity: false}); missiles = scene.physics.add.group({allowGravity: false}); fallingSpikes = scene.physics.add.group(); iceballs = scene.physics.add.group({allowGravity: false}); coinsGroup = scene.physics.add.group(); dragonCoinsGroup = scene.physics.add.group();
+            birdGroup = scene.physics.add.group({allowGravity: false}); birdFireGroup = scene.physics.add.group({allowGravity: false}); nextBirdSpawnTime = 0;
             powerUps = scene.physics.add.group(); defuseOrbs = scene.physics.add.staticGroup();
             portals = scene.physics.add.staticGroup(); fakeCoins = scene.physics.add.staticGroup(); homingFireballs = scene.physics.add.group({allowGravity: false});
             poisonDrops = scene.physics.add.group(); badSprings = scene.physics.add.staticGroup();
@@ -1591,6 +1870,25 @@
                 }
             });
             scene.physics.add.collider(iceballs, bats, (i, b) => { b.destroy(); i.destroy(); score+=40; SoundEngine.play('hit'); explodeParticles(scene, b.x, b.y, 0x00FFFF, 10); });
+            scene.physics.add.collider(fireballs, [ground, platforms], (f) => f.destroy());
+            scene.physics.add.collider(fireballs, enemies, (f, e) => {
+                f.destroy(); SoundEngine.play('hit');
+                if (e.getData('isGiant')) {
+                    e.setData('hp', e.getData('hp') - 1);
+                    e.setTint(0xFF5500);
+                    scene.time.delayedCall(100, () => e.clearTint());
+                    if (e.getData('hp') <= 0) {
+                        e.destroy(); score += 50; scoreText.setText('Score: ' + score);
+                        taskState.enemiesRun += 1; if (taskState.enemiesRun >= 8) taskState.completed[2] = true; updateTaskOverlay();
+                        explodeParticles(scene, e.x, e.y, 0xFF9900, 30);
+                    }
+                } else {
+                    e.destroy(); score += 30; scoreText.setText('Score: ' + score);
+                    taskState.enemiesRun += 1; if (taskState.enemiesRun >= 8) taskState.completed[2] = true; updateTaskOverlay();
+                    explodeParticles(scene, e.x, e.y, 0xFF8800, 20);
+                }
+            });
+            scene.physics.add.collider(fireballs, bats, (f, b) => { b.destroy(); f.destroy(); score+=40; SoundEngine.play('hit'); explodeParticles(scene, b.x, b.y, 0xFF8800, 10); });
             
             scene.physics.add.collider(player, enemies, (p, e) => {
                 if (isGroundPounding) {
@@ -1653,6 +1951,20 @@
             bats.getChildren().forEach(b => { if(Phaser.Math.Distance.Between(b.x, b.y, player.x, player.y) < 400) this.physics.moveToObject(b, player, 150); });
             missiles.getChildren().forEach(m => { this.physics.moveToObject(m, player, 200); m.rotation = Phaser.Math.Angle.Between(m.x, m.y, player.x, player.y); });
             homingFireballs.getChildren().forEach(hf => { this.physics.moveToObject(hf, player, 180); });
+            fireballs.getChildren().forEach(fb => {
+                if (fb.active && fb.getData('homing')) {
+                    let target = findNearestHomingTarget(this, fb);
+                    if (target) this.physics.moveToObject(fb, target, 320);
+                }
+            });
+            iceballs.getChildren().forEach(ib => {
+                if (ib.active && ib.getData('homing')) {
+                    let target = findNearestHomingTarget(this, ib);
+                    if (target) this.physics.moveToObject(ib, target, 300);
+                }
+            });
+            if (time > nextBirdSpawnTime) { nextBirdSpawnTime = time + Phaser.Math.Between(4500, 9000); spawnSkyBird(this); }
+            updateSkyBirds(this, time);
 
             let v = currentSpeed;
             if (!isTwoPlayerMode) {
@@ -1725,6 +2037,24 @@
                         ice.setDisplaySize(40, 40);
                         ice.setData('owner', 'player1');
                     });
+                } else if (specialWeapon === 'ice') {
+                    let ice = iceballs.create(player.x, player.y, 'iceTex');
+                    ice.setVelocityX(player.flipX ? -520 : 520);
+                    ice.body.allowGravity = false;
+                    ice.setDisplaySize(36, 36);
+                    ice.setData('owner', 'player1');
+                } else if (specialWeapon === 'fire') {
+                    let fire = fireballs.create(player.x, player.y, 'blueFireTex').setTint(0xFF6600);
+                    fire.setVelocityX(player.flipX ? -520 : 520);
+                    fire.body.allowGravity = false;
+                    fire.setDisplaySize(28, 28);
+                    fire.setData('owner', 'player1');
+                } else if (specialWeapon === 'homingFire' || specialWeapon === 'homingIce') {
+                    let proj = (specialWeapon === 'homingFire' ? fireballs.create(player.x, player.y, 'blueFireTex').setTint(0xFF6600) : iceballs.create(player.x, player.y, 'iceTex'));
+                    proj.body.allowGravity = false;
+                    proj.setVelocityX(player.flipX ? -320 : 320);
+                    proj.setData('owner', 'player1');
+                    proj.setData('homing', true);
                 } else {
                     let ice = iceballs.create(player.x, player.y, 'chatGPTImageTex');
                     ice.setVelocityX(player.flipX ? -500 : 500);
