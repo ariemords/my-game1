@@ -70,6 +70,7 @@
             this.load.image('thiefTex', 'טרול.png');
             this.load.image('playerImg', 'מכשף.png');
             this.load.image('chatGPTImageTex', 'ChatGPT Image Apr 17, 2026, 11_05_45 AM.png');
+            this.load.image('stagePathImage', 'תמונה.png');
             this.load.image('stage5DragonImg', 'Gemini_Generated_Image_b1yyxab1yyxab1yy.png');
         }
 
@@ -320,7 +321,7 @@
             if (levelTransitionContainer) return;
             levelTransitionContainer = scene.add.container(400, 300).setScrollFactor(0).setDepth(1000).setVisible(false);
             let bg = scene.add.rectangle(0, 0, 780, 780, 0x050508, 0.98).setStrokeStyle(6, 0xFFAA00);
-            let bgImage = scene.add.image(0, 0, 'stage5DragonImg').setDisplaySize(760, 760).setOrigin(0.5).setAlpha(0.96);
+            let bgImage = scene.add.image(0, 0, 'stagePathImage').setDisplaySize(760, 760).setOrigin(0.5).setAlpha(1);
             let title = scene.add.text(0, -340, 'LEVEL PATH', { fontSize: '38px', fill: '#FFD700', fontStyle: 'bold', stroke: '#000', strokeThickness: 6 }).setOrigin(0.5);
             let subtitle = scene.add.text(0, 320, '', { fontSize: '20px', fill: '#FFFFFF' }).setOrigin(0.5);
             const stagePositions = [
@@ -330,13 +331,8 @@
                 { x: 0, y: -70 },
                 { x: 0, y: -180 }
             ];
-            const stageLabels = stagePositions.map((pos, index) => {
-                let labelBg = scene.add.circle(pos.x, pos.y, 32, 0x000000, 0.65).setDepth(1001);
-                let label = scene.add.text(pos.x, pos.y, String(index + 1), { fontSize: '28px', fill: '#FFD700', fontStyle: 'bold' }).setOrigin(0.5).setDepth(1002);
-                return [labelBg, label];
-            }).flat();
             levelTransitionMarker = scene.add.image(stagePositions[0].x, stagePositions[0].y, 'playerTex').setDisplaySize(60, 60).setDepth(1003).setTint(0x00FF00);
-            levelTransitionContainer.add([bg, bgImage, title, ...stageLabels, levelTransitionMarker, subtitle]);
+            levelTransitionContainer.add([bg, bgImage, title, levelTransitionMarker, subtitle]);
             levelTransitionContainer.subtitle = subtitle;
         }
 
