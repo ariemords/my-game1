@@ -836,6 +836,7 @@
                             meteor.body.allowGravity = false;
                             meteor.setVelocityX(player.flipX ? -400 : 400);
                             meteor.setVelocityY(-200 + parseInt(offset) * 80);
+                            meteor.setData('owner', 'player1');
                         });
                         centerText.setText('Selected: Meteor Power').setVisible(true);
                     }
@@ -896,14 +897,20 @@
                 },
                 {
                     title: 'Lightning Throw',
-                    desc: 'Creates three electric projectiles instantly',
+                    desc: 'Light strikes fall from the sky to your mouse cursor',
                     apply: () => {
+                        if (tempUpgradeBackup.specialWeapon === null) tempUpgradeBackup.specialWeapon = specialWeapon;
+                        if (tempUpgradeBackup.shootDelay === null) tempUpgradeBackup.shootDelay = shootDelay;
+                        specialWeapon = 'lightningMouse';
+                        shootDelay = 250;
                         ['-1','0','1'].forEach((offset) => {
                             let bolt = fireballs.create(player.x, player.y, 'plasmaTex');
                             bolt.body.allowGravity = false;
                             bolt.setVelocityX(player.flipX ? -400 : 400);
                             bolt.setVelocityY(parseInt(offset) * -100);
+                            bolt.setData('owner', 'player1');
                         });
+                        if (player) player.setTint(0xFFFF88);
                         centerText.setText('Selected: Lightning Throw').setVisible(true);
                     }
                 },
@@ -957,6 +964,7 @@
                             let blast = fireballs.create(player.x, player.y, 'powerTex').setTint(0xFF5500);
                             blast.body.allowGravity = false;
                             blast.setVelocityX(i * 120);
+                            blast.setData('owner', 'player1');
                             blast.setVelocityY(-200);
                         }
                         centerText.setText('Selected: Massive Charge').setVisible(true);
@@ -1125,6 +1133,7 @@
                             let bolt = fireballs.create(player.x, player.y, 'plasmaTex');
                             bolt.body.allowGravity = false;
                             bolt.setVelocity(player.flipX ? -400 : 400, i * -120);
+                            bolt.setData('owner', 'player1');
                         }
                         centerText.setText('Selected: Thunder Burst').setVisible(true);
                     }
@@ -1149,6 +1158,7 @@
                             let flame = fireballs.create(player.x, player.y, 'blueFireTex').setTint(0xFF5500);
                             flame.body.allowGravity = false;
                             flame.setVelocity(player.flipX ? -450 : 450, i * -80);
+                            flame.setData('owner', 'player1');
                         }
                         centerText.setText('Selected: Dragon Breath').setVisible(true);
                     }
@@ -1170,6 +1180,7 @@
                             let meteor = fireballs.create(player.x + i * 20, player.y - 40, 'powerTex').setTint(0xFF8800);
                             meteor.body.allowGravity = false;
                             meteor.setVelocity(i * 120, -280);
+                            meteor.setData('owner', 'player1');
                         }
                         centerText.setText('Selected: Storm Call').setVisible(true);
                     }
@@ -1921,7 +1932,7 @@
 
             if(currentLevel === 3 && boss) {
                 scene.physics.add.overlap(player, lava, () => { health = 0; takeDamage(scene); });
-                scene.physics.add.overlap(player, fireballs, (p, f) => { f.destroy(); takeDamage(scene); });
+                scene.physics.add.overlap(player, fireballs, (p, f) => { if (f.getData('owner') === 'player1' || f.getData('owner') === 'player2') return; f.destroy(); takeDamage(scene); });
                 scene.physics.add.overlap(iceballs, boss, (b, i) => { if(!i.active) return; i.active = false; i.body.enable = false; i.destroy(); hitBoss(scene, boss, 1); });
                 scene.physics.add.collider(player, boss, (p, b) => { if ((!gravityFlipped && p.body.touching.down && b.body.touching.up) || (gravityFlipped && p.body.touching.up && b.body.touching.down)) { p.setVelocityY(gravityFlipped ? 600 : -400); hitBoss(scene, boss, 4); } else { takeDamage(scene); } });
             }
@@ -1929,7 +1940,7 @@
                 scene.physics.add.overlap(player, lava, () => { player.setVelocityY(-800); takeDamage(scene); }); 
                 scene.physics.add.overlap(iceballs, trueBoss, (b, i) => { if(!i.active) return; i.active = false; i.body.enable = false; i.destroy(); hitBoss(scene, trueBoss, 1); });
                 scene.physics.add.collider(player, trueBoss, (p, b) => { if ((!gravityFlipped && p.body.touching.down && b.body.touching.up) || (gravityFlipped && p.body.touching.up && b.body.touching.down)) { p.setVelocityY(gravityFlipped ? 600 : -400); hitBoss(scene, trueBoss, 4); } else { takeDamage(scene); } });
-                scene.physics.add.overlap(player, fireballs, (p, f) => { f.destroy(); takeDamage(scene); });
+                scene.physics.add.overlap(player, fireballs, (p, f) => { if (f.getData('owner') === 'player1' || f.getData('owner') === 'player2') return; f.destroy(); takeDamage(scene); });
             }
 
             scene.physics.add.overlap(player, coinsGroup, (p, c) => { let val = c.getData('diamond') ? 100 : 10; c.destroy(); score += val; scoreText.setText('Score: ' + score); SoundEngine.play('coin'); taskState.coinsRun += 1; if (taskState.coinsRun >= 40) taskState.completed[1] = true; updateTaskOverlay(); });
@@ -2034,7 +2045,7 @@
 
             if (Phaser.Input.Keyboard.JustDown(gravToggleKey) && score >= 50) { score -= 50; scoreText.setText('Score: ' + score); SoundEngine.play('coin'); flipGravity(this, 3000); }
             if (Phaser.Input.Keyboard.JustDown(superJumpKey)) { superJumpActive = true; SoundEngine.play('coin'); this.time.delayedCall(5000, () => superJumpActive = false); }
-            if (Phaser.Input.Keyboard.JustDown(meteorKey)) { let m = fireballs.create(player.x + (player.flipX ? -300 : 300), 0, 'powerTex').setTint(0xFF0000); m.body.allowGravity = true; m.setVelocityY(500); SoundEngine.play('shoot'); }
+            if (Phaser.Input.Keyboard.JustDown(meteorKey)) { let m = fireballs.create(player.x + (player.flipX ? -300 : 300), 0, 'powerTex').setTint(0xFF0000); m.body.allowGravity = true; m.setVelocityY(500); m.setData('owner', 'player1'); SoundEngine.play('shoot'); }
             
             if (Phaser.Input.Keyboard.JustDown(shrinkKey) && superCharge >= superChargeMax && gameActive && !isShopOpen) {
                 fireSuperShot(this);
@@ -2071,6 +2082,15 @@
                     fire.setDisplaySize(56, 56);
                     fire.setData('owner', 'player1');
                     fire.setData('fireProjectile', true);
+                } else if (specialWeapon === 'lightningMouse') {
+                    const pointer = this.input.activePointer;
+                    const strikeX = pointer.worldX || player.x;
+                    let lightning = fireballs.create(strikeX, -30, 'blueFireTex').setTint(0xFFFF88);
+                    lightning.setDisplaySize(80, 80);
+                    lightning.body.allowGravity = false;
+                    lightning.setVelocity(0, 900);
+                    lightning.setData('owner', 'player1');
+                    lightning.setData('fireProjectile', true);
                 } else if (specialWeapon === 'homingFire' || specialWeapon === 'homingIce') {
                     let proj = (specialWeapon === 'homingFire' ? fireballs.create(player.x, player.y, 'blueFireTex').setTint(0xFF1100) : iceballs.create(player.x, player.y, 'iceTex'));
                     proj.body.allowGravity = false;
