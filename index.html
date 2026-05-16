@@ -318,24 +318,24 @@
         function createLevelTransitionOverlay(scene) {
             if (levelTransitionContainer) return;
             levelTransitionContainer = scene.add.container(400, 300).setScrollFactor(0).setDepth(1000).setVisible(false);
-            let bg = scene.add.rectangle(0, 0, 780, 780, 0x07101F, 0.92).setStrokeStyle(6, 0x00CCFF);
-            let bgImage = scene.add.image(0, 0, 'stage5DragonImg').setDisplaySize(620, 420).setOrigin(0.5).setAlpha(0.25);
-            let map = scene.add.image(0, 0, 'transitionMapTex').setDisplaySize(720, 720).setOrigin(0.5).setAlpha(0.15);
-            let title = scene.add.text(0, -340, 'LEVEL COMPLETED!', { fontSize: '36px', fill: '#FFD700', fontStyle: 'bold', stroke: '#000', strokeThickness: 6 }).setOrigin(0.5);
+            let bg = scene.add.rectangle(0, 0, 780, 780, 0x050508, 0.98).setStrokeStyle(6, 0xFFAA00);
+            let bgImage = scene.add.image(0, 0, 'stage5DragonImg').setDisplaySize(760, 760).setOrigin(0.5).setAlpha(0.96);
+            let title = scene.add.text(0, -340, 'LEVEL PATH', { fontSize: '38px', fill: '#FFD700', fontStyle: 'bold', stroke: '#000', strokeThickness: 6 }).setOrigin(0.5);
             let subtitle = scene.add.text(0, 320, '', { fontSize: '20px', fill: '#FFFFFF' }).setOrigin(0.5);
             const stagePositions = [
-                { x: 0, y: 280 },
-                { x: 0, y: 140 },
-                { x: 0, y: 0 },
-                { x: 0, y: -140 },
-                { x: 0, y: -280 }
+                { x: 0, y: 260 },
+                { x: 0, y: 150 },
+                { x: 0, y: 40 },
+                { x: 0, y: -70 },
+                { x: 0, y: -180 }
             ];
             const stageLabels = stagePositions.map((pos, index) => {
-                return scene.add.text(pos.x, pos.y, String(index + 1), { fontSize: '28px', fill: '#FFFFFF', fontStyle: 'bold' }).setOrigin(0.5).setDepth(1002);
-            });
-            levelTransitionMarker = scene.add.image(0, 280, 'playerTex').setDisplaySize(52, 52).setDepth(1003).setTint(0x00FF00);
-            let heroImage = scene.add.image(0, -260, 'chatGPTImageTex').setDisplaySize(140, 100).setOrigin(0.5).setAlpha(0.9);
-            levelTransitionContainer.add([bg, bgImage, map, title, heroImage, ...stageLabels, levelTransitionMarker, subtitle]);
+                let labelBg = scene.add.circle(pos.x, pos.y, 32, 0x000000, 0.65).setDepth(1001);
+                let label = scene.add.text(pos.x, pos.y, String(index + 1), { fontSize: '28px', fill: '#FFD700', fontStyle: 'bold' }).setOrigin(0.5).setDepth(1002);
+                return [labelBg, label];
+            }).flat();
+            levelTransitionMarker = scene.add.image(stagePositions[0].x, stagePositions[0].y, 'playerTex').setDisplaySize(60, 60).setDepth(1003).setTint(0x00FF00);
+            levelTransitionContainer.add([bg, bgImage, title, ...stageLabels, levelTransitionMarker, subtitle]);
             levelTransitionContainer.subtitle = subtitle;
         }
 
@@ -343,11 +343,11 @@
             createLevelTransitionOverlay(scene);
             if (!levelTransitionContainer || !levelTransitionMarker) return;
             const positions = [
-                { x: 0, y: 280 },
-                { x: 0, y: 140 },
-                { x: 0, y: 0 },
-                { x: 0, y: -140 },
-                { x: 0, y: -280 }
+                { x: 0, y: 260 },
+                { x: 0, y: 150 },
+                { x: 0, y: 40 },
+                { x: 0, y: -70 },
+                { x: 0, y: -180 }
             ];
             let fromIndex = Math.max(0, Math.min(4, fromLevel - 1));
             let toIndex = Math.max(0, Math.min(4, toLevel - 1));
@@ -1233,12 +1233,8 @@
             gameActive = false;
             centerText.setVisible(false);
             scene.physics.world.pause();
-            showLevelCompleteOverlay(scene);
-            scene.time.delayedCall(1400, () => {
-                hideLevelCompleteOverlay();
-                showLevelTransitionOverlay(scene, currentLevel, currentLevel + 1);
-            });
-            scene.time.delayedCall(3800, () => {
+            showLevelTransitionOverlay(scene, currentLevel, currentLevel + 1);
+            scene.time.delayedCall(2600, () => {
                 hideLevelTransitionOverlay();
                 if (upgradeMenuContainer) upgradeMenuContainer.setVisible(true);
             });
@@ -1250,7 +1246,6 @@
             if (upgradeMenuContainer) {
                 upgradeMenuContainer.setVisible(false);
             }
-            hideLevelCompleteOverlay();
             hideLevelTransitionOverlay();
             isUpgradeMenuOpen = false;
             scene.physics.world.resume();
@@ -1851,6 +1846,11 @@
                 let isSuper = i.getData('isSuper');
                 i.destroy(); SoundEngine.play('hit');
                 let damage = isSuper ? 2 : 1;
+                if (combo >= 3) {
+                    damage += 1;
+                    missiles.clear(true, true);
+                    homingFireballs.clear(true, true);
+                }
                 if(e.getData('isGiant')) {
                     e.setData('hp', e.getData('hp') - damage);
                     e.setTint(isSuper ? 0x00FF00 : 0x00FFFF);
@@ -1859,6 +1859,7 @@
                         e.destroy(); score += isSuper ? 70 : 50; scoreText.setText('Score: ' + score);
                         taskState.enemiesRun += 1; if (taskState.enemiesRun >= 8) taskState.completed[2] = true; updateTaskOverlay();
                         incrementSuperCharge();
+                        combo += 1; comboTimer = 2000; comboText.setText('Combo: ' + combo);
                         explodeParticles(scene, e.x, e.y, 0xFFFFFF, 30);
                     }
                 } else {
@@ -1866,6 +1867,8 @@
                     taskState.enemiesRun += 1; if (taskState.enemiesRun >= 8) taskState.completed[2] = true; updateTaskOverlay();
                     if (!isSuper) incrementSuperCharge();
                     else { score += 10; scoreText.setText('Score: ' + score); }
+                    combo += 1; comboTimer = 2000; comboText.setText('Combo: ' + combo);
+                    if (combo >= 3) { missiles.clear(true, true); homingFireballs.clear(true, true); }
                     explodeParticles(scene, e.x, e.y, Math.random()*0xFFFFFF, 20);
                 }
             });
@@ -1873,22 +1876,29 @@
             scene.physics.add.collider(fireballs, [ground, platforms], (f) => f.destroy());
             scene.physics.add.collider(fireballs, enemies, (f, e) => {
                 f.destroy(); SoundEngine.play('hit');
+                let damage = 1;
+                if (combo >= 3) {
+                    damage = 2;
+                    missiles.clear(true, true);
+                    homingFireballs.clear(true, true);
+                }
                 if (e.getData('isGiant')) {
-                    e.setData('hp', e.getData('hp') - 1);
+                    e.setData('hp', e.getData('hp') - damage);
                     e.setTint(0xFF5500);
                     scene.time.delayedCall(100, () => e.clearTint());
                     if (e.getData('hp') <= 0) {
                         e.destroy(); score += 50; scoreText.setText('Score: ' + score);
                         taskState.enemiesRun += 1; if (taskState.enemiesRun >= 8) taskState.completed[2] = true; updateTaskOverlay();
+                        combo += 1; comboTimer = 2000; comboText.setText('Combo: ' + combo);
                         explodeParticles(scene, e.x, e.y, 0xFF9900, 30);
                     }
                 } else {
                     e.destroy(); score += 30; scoreText.setText('Score: ' + score);
                     taskState.enemiesRun += 1; if (taskState.enemiesRun >= 8) taskState.completed[2] = true; updateTaskOverlay();
+                    combo += 1; comboTimer = 2000; comboText.setText('Combo: ' + combo);
                     explodeParticles(scene, e.x, e.y, 0xFF8800, 20);
                 }
-            });
-            scene.physics.add.collider(fireballs, bats, (f, b) => { b.destroy(); f.destroy(); score+=40; SoundEngine.play('hit'); explodeParticles(scene, b.x, b.y, 0xFF8800, 10); });
+            });            scene.physics.add.collider(fireballs, bats, (f, b) => { b.destroy(); f.destroy(); score+=40; SoundEngine.play('hit'); explodeParticles(scene, b.x, b.y, 0xFF8800, 10); });
             
             scene.physics.add.collider(player, enemies, (p, e) => {
                 if (isGroundPounding) {
@@ -2319,7 +2329,6 @@
             if (victoryText) { victoryText.destroy(); victoryText = null; }
             if (centerText) centerText.setVisible(false);
             if (bossHealthText) bossHealthText.setText('');
-            showLevelCompleteOverlay(scene);
             scene.physics.world.pause();
             victoryOverlay = scene.add.rectangle(400, 300, 800, 600, 0x000000, 0.95).setScrollFactor(0).setDepth(1200);
 
