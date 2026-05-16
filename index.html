@@ -262,9 +262,10 @@
                     if (bird.x < -50) { bird.destroy(); return; }
                     if (time > bird.getData('nextFire')) {
                         bird.setData('nextFire', time + Phaser.Math.Between(1200, 2400));
-                        let shot = birdFireGroup.create(bird.x - 16, bird.y + 8, 'skyFireTex').setDepth(90).setTint(0xFF6600);
+                        let shot = birdFireGroup.create(bird.x - 16, bird.y + 8, 'skyFireTex').setDepth(90).setTint(0xFF2200).setDisplaySize(24, 24);
                         shot.body.allowGravity = false;
-                        shot.setVelocity(Phaser.Math.Between(-20, 20), 260);
+                        shot.setVelocity(Phaser.Math.Between(-30, 30), 280);
+                        shot.setData('owner', 'bird');
                     }
                 });
             }
@@ -1703,6 +1704,8 @@
 
             activeColliders.push(scene.physics.add.collider(player, missiles, (p, m) => { takeDamage(scene); explodeParticles(scene, m.x, m.y, 0xFF0000, 20); m.destroy(); }));
             activeColliders.push(scene.physics.add.collider(player2, missiles, (p, m) => { takeDamage2Player(scene); explodeParticles(scene, m.x, m.y, 0xFF0000, 20); m.destroy(); }));
+            activeColliders.push(scene.physics.add.overlap(player, birdFireGroup, (p, fire) => { fire.destroy(); takeDamage(scene); explodeParticles(scene, fire.x, fire.y, 0xFF4400, 18); }));
+            activeColliders.push(scene.physics.add.overlap(player2, birdFireGroup, (p, fire) => { fire.destroy(); takeDamage2Player(scene); explodeParticles(scene, fire.x, fire.y, 0xFF4400, 18); }));
 
             activeColliders.push(scene.physics.add.collider(player, fallingSpikes, (p, s) => { takeDamage(scene); s.destroy(); }));
             activeColliders.push(scene.physics.add.collider(player2, fallingSpikes, (p, s) => { takeDamage2Player(scene); s.destroy(); }));
@@ -1914,6 +1917,7 @@
             scene.physics.add.overlap(player, bats, (p, b) => { takeDamage(scene); b.destroy(); healBoss(scene, 1); }); 
             scene.physics.add.overlap(player, missiles, (p, m) => { takeDamage(scene); explodeParticles(scene, m.x, m.y, 0xFF0000, 20); m.destroy(); });
             scene.physics.add.overlap(player, homingFireballs, (p, h) => { takeDamage(scene); explodeParticles(scene, h.x, h.y, 0x0000FF, 20); h.destroy(); });
+            scene.physics.add.overlap(player, birdFireGroup, (p, fire) => { fire.destroy(); takeDamage(scene); explodeParticles(scene, fire.x, fire.y, 0xFF4400, 18); });
             scene.physics.add.overlap(player, fallingSpikes, (p, s) => { takeDamage(scene); s.destroy(); });
             scene.physics.add.overlap(player, lasers, () => takeDamage(scene));
             scene.physics.add.overlap(player, defuseOrbs, (p, orb) => { orb.destroy(); bombActive = false; bombText.setVisible(false); SoundEngine.play('coin'); explodeParticles(scene, p.x, p.y, 0x00FF00, 20); });
@@ -2065,14 +2069,14 @@
                     ice.setDisplaySize(36, 36);
                     ice.setData('owner', 'player1');
                 } else if (specialWeapon === 'fire') {
-                    let fire = fireballs.create(player.x, player.y, 'blueFireTex').setTint(0xFF0000);
-                    fire.setVelocityX(player.flipX ? -520 : 520);
+                    let fire = fireballs.create(player.x, player.y, 'blueFireTex').setTint(0xFF1100);
+                    fire.setVelocityX(player.flipX ? -560 : 560);
                     fire.body.allowGravity = false;
-                    fire.setDisplaySize(48, 48);
+                    fire.setDisplaySize(56, 56);
                     fire.setData('owner', 'player1');
                     fire.setData('fireProjectile', true);
                 } else if (specialWeapon === 'homingFire' || specialWeapon === 'homingIce') {
-                    let proj = (specialWeapon === 'homingFire' ? fireballs.create(player.x, player.y, 'blueFireTex').setTint(0xFF0000) : iceballs.create(player.x, player.y, 'iceTex'));
+                    let proj = (specialWeapon === 'homingFire' ? fireballs.create(player.x, player.y, 'blueFireTex').setTint(0xFF1100) : iceballs.create(player.x, player.y, 'iceTex'));
                     proj.body.allowGravity = false;
                     proj.setVelocityX(player.flipX ? -320 : 320);
                     proj.setData('owner', 'player1');
@@ -2080,6 +2084,7 @@
                     proj.setData('boomerang', specialWeapon === 'homingFire');
                     proj.setData('maxDistance', 600);
                     proj.setData('spawnPos', {x: player.x, y: player.y});
+                    if (specialWeapon === 'homingFire') proj.setDisplaySize(52, 52);
                 } else {
                     let ice = iceballs.create(player.x, player.y, 'chatGPTImageTex');
                     ice.setVelocityX(player.flipX ? -500 : 500);
