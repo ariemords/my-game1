@@ -319,9 +319,9 @@
             if (levelTransitionContainer) return;
             levelTransitionContainer = scene.add.container(400, 300).setScrollFactor(0).setDepth(1000).setVisible(false);
             let bg = scene.add.rectangle(0, 0, 780, 780, 0x07101F, 0.92).setStrokeStyle(6, 0x00CCFF);
-            let bgImage = scene.add.image(0, 0, 'stage1BackgroundImg').setDisplaySize(620, 420).setOrigin(0.5).setAlpha(0.18);
-            let map = scene.add.image(0, 0, 'transitionMapTex').setDisplaySize(720, 720).setOrigin(0.5);
-            let title = scene.add.text(0, -340, 'Stage Path', { fontSize: '34px', fill: '#00CCFF', fontStyle: 'bold' }).setOrigin(0.5);
+            let bgImage = scene.add.image(0, 0, 'stage5DragonImg').setDisplaySize(620, 420).setOrigin(0.5).setAlpha(0.25);
+            let map = scene.add.image(0, 0, 'transitionMapTex').setDisplaySize(720, 720).setOrigin(0.5).setAlpha(0.15);
+            let title = scene.add.text(0, -340, 'LEVEL COMPLETED!', { fontSize: '36px', fill: '#FFD700', fontStyle: 'bold', stroke: '#000', strokeThickness: 6 }).setOrigin(0.5);
             let subtitle = scene.add.text(0, 320, '', { fontSize: '20px', fill: '#FFFFFF' }).setOrigin(0.5);
             const stagePositions = [
                 { x: 0, y: 280 },
@@ -1954,7 +1954,18 @@
             fireballs.getChildren().forEach(fb => {
                 if (fb.active && fb.getData('homing')) {
                     let target = findNearestHomingTarget(this, fb);
-                    if (target) this.physics.moveToObject(fb, target, 320);
+                    if (target && fb.getData('boomerang')) {
+                        let distToTarget = Phaser.Math.Distance.Between(fb.x, fb.y, target.x, target.y);
+                        let spawnPos = fb.getData('spawnPos');
+                        let distToSpawn = Phaser.Math.Distance.Between(fb.x, fb.y, spawnPos.x, spawnPos.y);
+                        if (distToSpawn > fb.getData('maxDistance')) {
+                            this.physics.moveToObject(fb, spawnPos, 400);
+                        } else {
+                            this.physics.moveToObject(fb, target, 320);
+                        }
+                    } else if (target && !fb.getData('boomerang')) {
+                        this.physics.moveToObject(fb, target, 320);
+                    }
                 }
             });
             iceballs.getChildren().forEach(ib => {
@@ -2044,17 +2055,21 @@
                     ice.setDisplaySize(36, 36);
                     ice.setData('owner', 'player1');
                 } else if (specialWeapon === 'fire') {
-                    let fire = fireballs.create(player.x, player.y, 'blueFireTex').setTint(0xFF6600);
+                    let fire = fireballs.create(player.x, player.y, 'blueFireTex').setTint(0xFF0000);
                     fire.setVelocityX(player.flipX ? -520 : 520);
                     fire.body.allowGravity = false;
-                    fire.setDisplaySize(28, 28);
+                    fire.setDisplaySize(48, 48);
                     fire.setData('owner', 'player1');
+                    fire.setData('fireProjectile', true);
                 } else if (specialWeapon === 'homingFire' || specialWeapon === 'homingIce') {
-                    let proj = (specialWeapon === 'homingFire' ? fireballs.create(player.x, player.y, 'blueFireTex').setTint(0xFF6600) : iceballs.create(player.x, player.y, 'iceTex'));
+                    let proj = (specialWeapon === 'homingFire' ? fireballs.create(player.x, player.y, 'blueFireTex').setTint(0xFF0000) : iceballs.create(player.x, player.y, 'iceTex'));
                     proj.body.allowGravity = false;
                     proj.setVelocityX(player.flipX ? -320 : 320);
                     proj.setData('owner', 'player1');
                     proj.setData('homing', true);
+                    proj.setData('boomerang', specialWeapon === 'homingFire');
+                    proj.setData('maxDistance', 600);
+                    proj.setData('spawnPos', {x: player.x, y: player.y});
                 } else {
                     let ice = iceballs.create(player.x, player.y, 'chatGPTImageTex');
                     ice.setVelocityX(player.flipX ? -500 : 500);
