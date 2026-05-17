@@ -70,6 +70,7 @@
             this.load.image('thiefTex', 'טרול.png');
             this.load.image('playerImg', 'מכשף.png');
             this.load.image('chatGPTImageTex', 'ChatGPT Image Apr 17, 2026, 11_05_45 AM.png');
+            this.load.image('birdImg', 'ציפור.png');
             this.load.image('stagePathImage', 'תמונה.png');
             this.load.image('stage5DragonImg', 'Gemini_Generated_Image_b1yyxab1yyxab1yy.png');
         }
@@ -251,7 +252,7 @@
 
         function spawnSkyBird(scene) {
             if (!birdGroup) return;
-            let bird = birdGroup.create(850, Phaser.Math.Between(80, 180), 'birdTex').setVelocityX(-120).setDepth(90).setAlpha(0.95);
+            let bird = birdGroup.create(850, Phaser.Math.Between(80, 180), 'birdImg').setVelocityX(-120).setDepth(90).setAlpha(1).setDisplaySize(80, 60);
             bird.body.allowGravity = false;
             bird.setData('nextFire', scene.time.now + Phaser.Math.Between(1200, 2400));
         }
@@ -1595,8 +1596,7 @@
                 [600, 1200, 1800].forEach(x => { let fp = platforms.create(x, 350, 'platTex'); fp.setTint(0xAAAAAA); fp.body.enable = false; });
                 
                 boss = scene.physics.add.sprite(2900, 350, 'stage3DragonImg').setBounce(0.2).setCollideWorldBounds(true).setData('isAlive', true).setData('hp', 10);
-                boss.setDisplaySize(180, 120);
-                boss.body.setSize(160, 100, true);
+                boss.body.setSize(boss.displayWidth, boss.displayHeight, true);
                 boss.wing = scene.add.image(boss.x - 40, boss.y - 10, 'dragonWingTex').setOrigin(0.5).setDepth(49);
                 boss.mouth = scene.add.image(boss.x + 30, boss.y + 10, 'dragonMouthTex').setOrigin(0.5).setDepth(51);
                 scene.tweens.add({ targets: boss.wing, angle: { from: -35, to: 35 }, duration: 420, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
@@ -1630,9 +1630,8 @@
                 [600, 1200, 1800, 2400].forEach((x) => { let p = platforms.create(x, 400, 'platTex'); p.body.checkCollision.down = false; });
                 
                 trueBoss = scene.physics.add.sprite(2900, 150, 'stage5DragonImg').setCollideWorldBounds(true).setData('isAlive', true).setData('hp', 20).setVisible(true).setDepth(90);
-                trueBoss.setDisplaySize(220, 140);
                 trueBoss.body.allowGravity = false;
-                trueBoss.body.setSize(220, 140, true);
+                trueBoss.body.setSize(trueBoss.displayWidth, trueBoss.displayHeight, true);
                 trueBoss.setTint(0xFFFFFF);
 
                 trueBoss.wing = scene.add.image(trueBoss.x - 45, trueBoss.y - 10, 'dragonWingTex').setOrigin(0.5).setDepth(99);
